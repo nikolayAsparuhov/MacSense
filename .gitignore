@@ -1,0 +1,66 @@
+# Build output
+build/
+DerivedData/
+*.dmg
+*.zip
+.build/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+*.moved-aside
+*.swp
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+project.xcworkspace/
+
+# Swift Package Manager
+Packages/
+Package.pins
+Package.resolved
+.swiftpm/
+
+# CocoaPods (we don't use it, but just in case)
+Pods/
+
+# macOS junk
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Editors
+.vscode/
+.idea/
+*.iml
+
+# Logs / temporary files
+*.log
+tmp/
+temp/
+
+# Notarization / signing artifacts
+*.p12
+*.cer
+*.mobileprovision
+ExportOptions.plist
+notarization.zip
+
+# Project-specific generated content
+.claude/
+.superpowers/
