@@ -56,7 +56,7 @@ enum BatteryHealth: String {
         case .good:    return "Normal"
         case .fair:    return "Fair"
         case .poor:    return "Service recommended"
-        case .unknown: return "—"
+        case .unknown: return ""
         }
     }
 }

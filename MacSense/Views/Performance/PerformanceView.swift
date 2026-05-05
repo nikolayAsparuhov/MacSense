@@ -16,27 +16,15 @@ struct PerformanceView: View {
     /// every dialog this screen needs goes through this enum.
     enum ActiveAlert: Identifiable {
         case dns(String)
-        case permission(PermissionPrompt)
         var id: String {
             switch self {
             case .dns(let m): return "dns:\(m)"
-            case .permission(let p): return "perm:\(p.id.uuidString)"
             }
         }
     }
     @State private var showNetworkScan = false
     @State private var showWiFiInfo = false
     @State private var showProcessList = false
-
-    /// Carrier for the permissions-required dialog shown when the user
-    /// taps an action that needs entitlements MacSense doesn't have yet.
-    struct PermissionPrompt: Identifiable {
-        let id = UUID()
-        let title: String
-        let message: String
-        let primaryActionTitle: String?
-        let primaryAction: (() -> Void)?
-    }
 
     var body: some View {
         detailLayout
@@ -72,16 +60,6 @@ struct PerformanceView: View {
             switch alert {
             case .dns(let msg):
                 return Alert(title: Text("DNS Cache"), message: Text(msg), dismissButton: .default(Text("OK")))
-            case .permission(let prompt):
-                if let primaryTitle = prompt.primaryActionTitle, let primaryAction = prompt.primaryAction {
-                    return Alert(
-                        title: Text(prompt.title),
-                        message: Text(prompt.message),
-                        primaryButton: .default(Text(primaryTitle)) { primaryAction() },
-                        secondaryButton: .cancel()
-                    )
-                }
-                return Alert(title: Text(prompt.title), message: Text(prompt.message), dismissButton: .cancel())
             }
         }
     }
@@ -412,17 +390,9 @@ struct PerformanceView: View {
                     bottomAction: {
                         AnyView(
                             tileActionButton(title: "Battery Safe Mode", icon: "leaf", disabled: false, tint: tintColor) {
-                                activeAlert = .permission(PermissionPrompt(
-                                    title: "Battery Safe Mode",
-                                    message: "Battery Safe Mode dims the display, pauses background scans, and reduces fan speed to extend battery life. It needs Accessibility access in System Settings → Privacy & Security so MacSense can adjust display brightness on your behalf.",
-                                    primaryActionTitle: "Open System Settings",
-                                    primaryAction: {
-                                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                                            NSWorkspace.shared.open(url)
-                                        }
-                                    }
-                                ))
+                                openBatterySettings()
                             }
+                            .help("Opens System Settings → Battery, where Low Power Mode extends battery life by reducing CPU speed, dimming the display, and pausing background work.")
                         )
                     }
                 ) {
@@ -582,6 +552,23 @@ struct PerformanceView: View {
     // MARK: - Helpers
 
     private func percentString(_ p: Double) -> String { "\(Int((p * 100).rounded()))%" }
+
+    /// Opens System Settings → Battery (where Low Power Mode lives).
+    /// macOS 13+ uses the `Battery-Settings.extension` identifier; older
+    /// releases used `com.apple.preference.battery`. Falls back to the
+    /// generic Settings app if both fail.
+    private func openBatterySettings() {
+        let candidates = [
+            "x-apple.systempreferences:com.apple.Battery-Settings.extension",
+            "x-apple.systempreferences:com.apple.preference.battery"
+        ]
+        for raw in candidates {
+            if let url = URL(string: raw), NSWorkspace.shared.open(url) { return }
+        }
+        if let fallback = URL(string: "x-apple.systempreferences:") {
+            NSWorkspace.shared.open(fallback)
+        }
+    }
 
     /// Battery time label. When charging shows time-to-full, when on
     /// battery shows time-to-empty. Returns nil if the system is still
