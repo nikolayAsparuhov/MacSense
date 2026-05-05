@@ -113,11 +113,11 @@ Nothing scans automatically. You decide what to look at.
 </tr>
 <tr>
 <td><img src="docs/screenshots/dev-caches.png" alt="Developer caches" /></td>
-<td><img src="docs/screenshots/network-info.png" alt="Network info" /></td>
+<td><img src="docs/screenshots/network-scan.png" alt="Network scan" /></td>
 </tr>
 <tr>
 <td align="center"><sub><b>Developer caches</b> — 30+ ecosystems, grouped by tool</sub></td>
-<td align="center"><sub><b>Network info</b> — Wi-Fi or Ethernet details, public IP, DNS</sub></td>
+<td align="center"><sub><b>Network scan</b> — discover every device on your LAN with IP, MAC, hostname</sub></td>
 </tr>
 </table>
 

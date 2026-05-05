@@ -11,7 +11,7 @@ theme MacSense uses by default:
 | `performance.png`       | Performance grid with all 6 tiles (CPU, Memory, Disk, Network, Battery, Thermal) |
 | `applications.png`      | Applications → Installed Apps with the list populated                        |
 | `dev-caches.png`        | Cleanup → Developer Caches modal with several tool groups expanded           |
-| `network-info.png`      | Performance → Network info modal                                             |
+| `network-scan.png`      | Performance → Network → Scan modal with discovered devices on the LAN        |
 
 These are referenced from the root [README.md](../../README.md). PRs that add
 new screenshots should keep filenames consistent so the README doesn't break.
