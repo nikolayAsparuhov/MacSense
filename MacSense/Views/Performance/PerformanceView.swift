@@ -10,8 +10,20 @@ struct PerformanceView: View {
     /// owns it — start/stop happens at app level.
     private var monitor: PerformanceMonitor { appState.performanceMonitor }
     @State private var dnsFlushBusy = false
-    @State private var dnsFlushMessage: String?
-    @State private var permissionPrompt: PermissionPrompt?
+    @State private var activeAlert: ActiveAlert?
+
+    /// Single alert host — SwiftUI only renders one `.alert` per view, so
+    /// every dialog this screen needs goes through this enum.
+    enum ActiveAlert: Identifiable {
+        case dns(String)
+        case permission(PermissionPrompt)
+        var id: String {
+            switch self {
+            case .dns(let m): return "dns:\(m)"
+            case .permission(let p): return "perm:\(p.id.uuidString)"
+            }
+        }
+    }
     @State private var showNetworkScan = false
     @State private var showWiFiInfo = false
     @State private var showProcessList = false
@@ -56,35 +68,21 @@ struct PerformanceView: View {
             }
             .padding(28)
         }
-        .alert(
-            "DNS Cache",
-            isPresented: Binding(
-                get: { dnsFlushMessage != nil },
-                set: { if !$0 { dnsFlushMessage = nil } }
-            ),
-            presenting: dnsFlushMessage
-        ) { _ in
-            Button("OK") { dnsFlushMessage = nil }
-        } message: { msg in
-            Text(msg)
-        }
-        .alert(
-            permissionPrompt?.title ?? "",
-            isPresented: Binding(
-                get: { permissionPrompt != nil },
-                set: { if !$0 { permissionPrompt = nil } }
-            ),
-            presenting: permissionPrompt
-        ) { prompt in
-            if let primaryTitle = prompt.primaryActionTitle, let primaryAction = prompt.primaryAction {
-                Button(primaryTitle) {
-                    primaryAction()
-                    permissionPrompt = nil
+        .alert(item: $activeAlert) { alert in
+            switch alert {
+            case .dns(let msg):
+                return Alert(title: Text("DNS Cache"), message: Text(msg), dismissButton: .default(Text("OK")))
+            case .permission(let prompt):
+                if let primaryTitle = prompt.primaryActionTitle, let primaryAction = prompt.primaryAction {
+                    return Alert(
+                        title: Text(prompt.title),
+                        message: Text(prompt.message),
+                        primaryButton: .default(Text(primaryTitle)) { primaryAction() },
+                        secondaryButton: .cancel()
+                    )
                 }
+                return Alert(title: Text(prompt.title), message: Text(prompt.message), dismissButton: .cancel())
             }
-            Button("Cancel", role: .cancel) { permissionPrompt = nil }
-        } message: { prompt in
-            Text(prompt.message)
         }
     }
 
@@ -350,7 +348,7 @@ struct PerformanceView: View {
                             dnsFlushBusy = true
                             let ok = await appState.flushDNSCache()
                             dnsFlushBusy = false
-                            dnsFlushMessage = ok ? "DNS cache flushed." : "DNS flush cancelled or failed."
+                            activeAlert = .dns(ok ? "DNS cache flushed." : "DNS flush cancelled or failed.")
                         }
                     }
                 }
@@ -414,7 +412,7 @@ struct PerformanceView: View {
                     bottomAction: {
                         AnyView(
                             tileActionButton(title: "Battery Safe Mode", icon: "leaf", disabled: false, tint: tintColor) {
-                                permissionPrompt = PermissionPrompt(
+                                activeAlert = .permission(PermissionPrompt(
                                     title: "Battery Safe Mode",
                                     message: "Battery Safe Mode dims the display, pauses background scans, and reduces fan speed to extend battery life. It needs Accessibility access in System Settings → Privacy & Security so MacSense can adjust display brightness on your behalf.",
                                     primaryActionTitle: "Open System Settings",
@@ -423,7 +421,7 @@ struct PerformanceView: View {
                                             NSWorkspace.shared.open(url)
                                         }
                                     }
-                                )
+                                ))
                             }
                         )
                     }

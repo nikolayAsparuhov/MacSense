@@ -17,7 +17,8 @@ cd "$ROOT"
 SCHEME="MacSense"
 PROJECT="MacSense.xcodeproj"
 CONFIG="Release"
-VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' MacSense/Info.plist 2>/dev/null || echo "0.0.0")"
+VERSION="$(grep -m1 'MARKETING_VERSION' "$PROJECT/project.pbxproj" | sed -E 's/.*= ([^;]+);/\1/' | tr -d ' ')"
+[ -z "$VERSION" ] && VERSION="0.0.0"
 DIST="$ROOT/dist"
 ARCHIVE="$DIST/MacSense.xcarchive"
 EXPORT="$DIST/export"
@@ -31,10 +32,22 @@ rm -rf "$DIST"
 mkdir -p "$EXPORT"
 
 echo "→ Archiving"
-xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration "$CONFIG" \
-           -archivePath "$ARCHIVE" \
-           -destination 'generic/platform=macOS' \
-           archive
+if [ -n "$DEV_ID" ]; then
+    xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration "$CONFIG" \
+               -archivePath "$ARCHIVE" \
+               -destination 'generic/platform=macOS' \
+               archive
+else
+    # Ad-hoc sign for unsigned test builds — no Apple Developer cert required.
+    xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration "$CONFIG" \
+               -archivePath "$ARCHIVE" \
+               -destination 'generic/platform=macOS' \
+               CODE_SIGN_IDENTITY="-" \
+               CODE_SIGN_STYLE=Manual \
+               DEVELOPMENT_TEAM="" \
+               PROVISIONING_PROFILE_SPECIFIER="" \
+               archive
+fi
 
 # Export the .app from the archive. Skips signing if DEV_ID is empty.
 if [ -n "$DEV_ID" ]; then
