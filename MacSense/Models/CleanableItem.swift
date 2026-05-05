@@ -63,4 +63,5 @@ enum CategoryState: Equatable {
     case scanned              // scan finished, results in `categoryResults`
     case cleaning(progress: Double)
     case cleaned(freed: Int64)
+    case cleanedWithErrors(freed: Int64, message: String)
 }

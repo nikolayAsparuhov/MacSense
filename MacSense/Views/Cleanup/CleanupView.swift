@@ -292,6 +292,19 @@ struct CleanupView: View {
                 .padding(.horizontal, 6).padding(.vertical, 2)
                 .background(Capsule().fill(Theme.Palette.mint.opacity(0.2)))
                 .foregroundStyle(Theme.Palette.mint)
+        case .cleanedWithErrors(let freed, let message):
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Freed \(ByteCountFormatter.string(fromByteCount: freed, countStyle: .file))")
+                    .font(.system(size: 10, weight: .semibold))
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Capsule().fill(Theme.Palette.amber.opacity(0.2)))
+                    .foregroundStyle(Theme.Palette.amber)
+                Text(message)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         case .scanned:
             if let result, result.itemCount > 0 {
                 Text("\(result.itemCount) items")

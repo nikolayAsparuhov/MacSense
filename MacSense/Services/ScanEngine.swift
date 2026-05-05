@@ -185,14 +185,19 @@ actor ScanEngine {
     }
 
     private func scanPurgeableSpace() -> CategoryResult {
+        // Only surface items the user can ACTUALLY delete from user space.
+        //
+        // Skipped intentionally:
+        //   - VM files (sleepimage, swapfile): root-owned, macOS rebuilds.
+        //   - iCloud offloaded bytes: no public API to re-evict from CLI.
+        //   - "Reclaimable system caches" remainder: needs root + disk
+        //     pressure for `diskutil apfs purgePurgeable /` to do anything.
+        //
+        // What remains: local Time Machine snapshots, deletable on demand
+        // via `tmutil deletelocalsnapshots <date>` without root.
         var items: [CleanableItem] = []
-        var accounted: Int64 = 0
-
-        // 1. Local Time Machine snapshots — deletable on demand via
-        //    `tmutil deletelocalsnapshots <date>`.
         for snapshot in getLocalSnapshots() {
             let size = max(0, snapshot.size)
-            accounted += size
             items.append(CleanableItem(
                 name: "Time Machine local snapshot · \(snapshot.name)",
                 path: snapshot.name,
@@ -201,43 +206,6 @@ actor ScanEngine {
                 explanation: "Frozen point-in-time copy of your disk that Time Machine keeps locally between backups. Removing it doesn't affect your external Time Machine backup.",
                 isSelected: true,
                 lastModified: snapshot.date
-            ))
-        }
-
-        // 2. Top-level iCloud Drive containers with offloaded (not-downloaded)
-        //    items. Each container is grouped into one row showing the bytes
-        //    macOS is keeping evictable for that app/vendor. Rolling up by
-        //    container avoids generating 10,000 individual placeholder rows
-        //    on heavy iCloud users.
-        for item in scanICloudOffloadable() {
-            accounted += item.size
-            items.append(item)
-        }
-
-        // 3. Sleepimage / VM swap. Owned by root, listed for visibility only —
-        //    cannot be deleted from user space. macOS rebuilds them.
-        for item in scanVMFiles() {
-            accounted += item.size
-            items.append(item)
-        }
-
-        // 4. System-managed remainder. macOS does not expose what's inside
-        //    the rest of the purgeable bucket via any public API: dyld cache,
-        //    Spotlight index, log archives, document revisions, etc. We can
-        //    ask the kernel to release it via `diskutil apfs purgePurgeable /`
-        //    + `tmutil thinlocalsnapshots / 1TB 4`, but the kernel only
-        //    complies when it sees disk pressure.
-        let totalPurgeable = getDiskInfo().purgeableSpace
-        let remainder = totalPurgeable - accounted
-        if remainder > 10 * 1024 * 1024 {
-            items.append(CleanableItem(
-                name: "Reclaimable system caches",
-                path: "/",
-                size: remainder,
-                category: .purgeableSpace,
-                explanation: "macOS-managed bucket that includes dyld shared cache, Spotlight indexes, log archives, document revisions, and Photos cache. The kernel normally only releases this on disk pressure; cleaning forces an immediate release. Safe — files regenerate as needed.",
-                isSelected: true,
-                lastModified: nil
             ))
         }
 

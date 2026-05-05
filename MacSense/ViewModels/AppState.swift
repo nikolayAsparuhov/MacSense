@@ -1005,7 +1005,16 @@ final class AppState: ObservableObject {
                     self?.categoryStates[category] = .cleaning(progress: progress)
                 }
             }
-            categoryStates[category] = .cleaned(freed: outcome.freedSpace)
+            if outcome.errors.isEmpty {
+                categoryStates[category] = .cleaned(freed: outcome.freedSpace)
+            } else {
+                let summary = outcome.errors.first ?? "Some items could not be cleaned."
+                categoryStates[category] = .cleanedWithErrors(
+                    freed: outcome.freedSpace,
+                    message: summary
+                )
+                Logger.shared.log("Cleanup errors for \(category.rawValue): \(outcome.errors.joined(separator: " | "))", level: .warning)
+            }
             categoryResults.removeValue(forKey: category)
             await loadDiskInfo()
 

@@ -41,7 +41,17 @@ actor CleaningEngine {
                 .filter { $0 != "/" && $0.contains("TimeMachine") }
             let purged = await purgePurgeableSpace(snapshotNames: snapshotNames)
             result.freedSpace += purged
-            if purged > 0 { result.itemsCleaned += purgeable.count }
+            if purged > 0 {
+                result.itemsCleaned += purgeable.count
+            } else {
+                // macOS chose not to release these bytes — happens when the
+                // purgePurgeable call needs root (no privilege escalation),
+                // or the kernel decides the bytes are still useful (no disk
+                // pressure). Surface so the UI can tell the user the truth
+                // instead of silently reporting "cleaned" while the next
+                // scan re-finds the same purgeable bucket.
+                result.errors.append("Purgeable space could not be released. macOS frees these bytes automatically under disk pressure, or run `sudo diskutil apfs purgePurgeable /` from Terminal to force it now.")
+            }
             processed += purgeable.count
             progressHandler(Double(processed) / Double(total))
         }
@@ -61,13 +71,18 @@ actor CleaningEngine {
             progressHandler(Double(processed) / Double(total))
         }
 
+        Logger.shared.log("cleanItems: starting fileBased loop, count=\(fileBased.count)", level: .info)
         for item in fileBased {
             processed += 1
             progressHandler(Double(processed) / Double(total))
 
             do {
                 let itemURL = URL(fileURLWithPath: item.path)
-                guard fileManager.fileExists(atPath: item.path) else { continue }
+                guard fileManager.fileExists(atPath: item.path) else {
+                    Logger.shared.log("clean skip[missing]: \(item.path)", level: .warning)
+                    result.errors.append("Missing: \(item.name) (\(item.path))")
+                    continue
+                }
 
                 // Security: resolve symlinks, validate the real path, delete
                 // through the resolved URL. Deleting through the unresolved
@@ -78,8 +93,8 @@ actor CleaningEngine {
 
                 let pathAccepted = isSafeToDelete(resolvedPath: resolved)
                 guard pathAccepted else {
-                    let msg = "Skipped symlink or unsafe path: \(item.path) -> \(resolved)"
-                    Logger.shared.log(msg, level: .warning)
+                    let msg = "Skipped (not on allow-list): \(item.path) -> \(resolved)"
+                    Logger.shared.log("clean skip[allowlist]: \(item.path) resolved=\(resolved)", level: .warning)
                     result.errors.append(msg)
                     continue
                 }
@@ -89,19 +104,22 @@ actor CleaningEngine {
                 // swap between check and delete aborts the operation.
                 let reResolved = URL(fileURLWithPath: item.path).resolvingSymlinksInPath().path
                 guard reResolved == resolved else {
-                    let msg = "Aborting delete: path resolution changed between check and unlink for \(item.path)"
+                    let msg = "Aborting delete: path resolution changed for \(item.path)"
                     Logger.shared.log(msg, level: .warning)
                     result.errors.append(msg)
                     continue
                 }
 
                 try fileManager.removeItem(at: resolvedURL)
+                Logger.shared.log("clean ok: \(resolved) freed=\(item.size)", level: .info)
                 result.freedSpace += item.size
                 result.itemsCleaned += 1
             } catch {
+                Logger.shared.log("clean fail: \(item.path) error=\(error.localizedDescription)", level: .error)
                 result.errors.append("\(item.name): \(error.localizedDescription)")
             }
         }
+        Logger.shared.log("cleanItems: done freedSpace=\(result.freedSpace) cleaned=\(result.itemsCleaned) errors=\(result.errors.count)", level: .info)
 
         return result
     }
@@ -263,7 +281,7 @@ actor CleaningEngine {
     /// deletions can still happen through the explicit per-item flow.
     private func isSafeToDelete(resolvedPath: String) -> Bool {
         let home = fileManager.homeDirectoryForCurrentUser.path
-        let allowedRoots = [
+        var allowedRoots = [
             "\(home)/Library/Caches",
             "\(home)/Library/Logs",
             "\(home)/Library/Saved Application State",
@@ -275,18 +293,34 @@ actor CleaningEngine {
             "\(home)/Library/Preferences",
             "\(home)/Library/LaunchAgents",
             "\(home)/Library/Mail Downloads",
+            "\(home)/Library/Developer",
             "\(home)/.Trash",
             "/Library/Caches",
             "/Library/Logs",
             "/private/var/log",
             "/private/var/tmp",
             "/tmp",
+            // Homebrew prefix-relative cache roots — covered explicitly so
+            // the catalog/Brew scanner can clean Homebrew's download cache
+            // when it lives under a non-default prefix.
+            "/opt/homebrew/Library/Caches",
+            "/usr/local/Homebrew/Library/Caches",
         ]
-        // Allow whole-subtree deletion only; require a trailing "/" on the
-        // root match so siblings like "/tmpfoo" cannot pass the prefix check.
+        // Append every dev-cache root from the catalog. The catalog is the
+        // source of truth for what we offer to clean; if it lists a path,
+        // the cleaner must be allowed to delete inside it (or to delete
+        // the root itself, e.g. `~/.npm`).
+        for tool in DevCacheCatalog.all {
+            allowedRoots.append(contentsOf: tool.paths)
+        }
+        // Accept either an exact root match (delete the cache dir itself)
+        // or a strict subpath (delete inside it). The trailing-"/" guard
+        // on the subpath check still blocks siblings like "/tmpfoo".
         let normalized = (resolvedPath as NSString).standardizingPath
         return allowedRoots.contains { root in
-            let rootWithSeparator = root.hasSuffix("/") ? root : root + "/"
+            let normalizedRoot = (root as NSString).standardizingPath
+            if normalized == normalizedRoot { return true }
+            let rootWithSeparator = normalizedRoot.hasSuffix("/") ? normalizedRoot : normalizedRoot + "/"
             return normalized.hasPrefix(rootWithSeparator)
         }
     }
