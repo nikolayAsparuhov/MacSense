@@ -189,6 +189,11 @@ final class AppState: ObservableObject {
     /// scheduled scan finishes.
     let scheduleVM = ScheduleViewModel()
 
+    /// Drawer state for the Help glossary. Any view can call
+    /// `appState.help.open(at: "purgeable-space")` to surface the
+    /// drawer scrolled to the relevant entry.
+    let help = HelpController()
+
     /// Cached snapshot from a prior scan, loaded silently on launch.
     /// Held privately so the sidebar dot and Storage page hero don't
     /// react to it — only revealed via `storageGraph` / `storageReport`

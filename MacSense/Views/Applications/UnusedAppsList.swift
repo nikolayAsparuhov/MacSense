@@ -146,6 +146,8 @@ struct UnusedAppsList: View {
                 }
             }
 
+            HelpIcon(entryID: "last-used-date")
+
             Spacer()
 
             Text("\(staleApps.count) stale · \(neverOpenedApps.count) never opened")

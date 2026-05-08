@@ -53,6 +53,11 @@ struct CleanupView: View {
         ) {
             sparkleHero
         }
+        .coachMark(
+            id: "smartScan",
+            title: "Smart Scan",
+            body: "Tap Scan to walk every cleanup category and total recoverable space — read-only, nothing is deleted."
+        )
     }
 
     private var scanLabel: String {
@@ -160,9 +165,12 @@ struct CleanupView: View {
                     .frame(width: 110, height: 110)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Cleanup summary")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
+                    HStack(spacing: 6) {
+                        Text("Cleanup summary")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                        HelpIcon(entryID: "recoverable-space")
+                    }
 
                     if totalRecoverable > 0 {
                         HStack(spacing: 6) {

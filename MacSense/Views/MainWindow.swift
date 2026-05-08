@@ -4,17 +4,38 @@ struct MainWindow: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        HStack(spacing: 0) {
-            Sidebar()
-                .frame(width: 220)
+        // Wrap in a child view that observes the help controller
+        // directly so its `isDrawerOpen` flips trigger a re-render
+        // here. AppState owns the controller as a `let`, so its
+        // own `objectWillChange` doesn't fire on those updates.
+        MainWindowContent(help: appState.help)
+    }
+}
 
-            Divider()
-                .ignoresSafeArea()
+private struct MainWindowContent: View {
+    @ObservedObject var help: HelpController
+    @EnvironmentObject var appState: AppState
 
-            detailPane
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+    var body: some View {
+        ZStack {
+            HStack(spacing: 0) {
+                Sidebar()
+                    .frame(width: 220)
+
+                Divider()
+                    .ignoresSafeArea()
+
+                detailPane
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+
+            if help.isDrawerOpen {
+                HelpDrawer(controller: help)
+                    .zIndex(100)
+            }
         }
         .frame(minWidth: 980, minHeight: 640)
+        .animation(.spring(response: 0.4, dampingFraction: 0.86), value: help.isDrawerOpen)
     }
 
     @ViewBuilder

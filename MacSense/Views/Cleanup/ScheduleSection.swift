@@ -43,9 +43,12 @@ struct ScheduleSection: View {
                 .background(Circle().fill(Theme.Palette.cyan.opacity(0.12)))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Scheduled scan")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
+                HStack(spacing: 6) {
+                    Text("Scheduled scan")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                    HelpIcon(entryID: "scheduled-cleanup")
+                }
                 Text(viewModel.isEnabled ? viewModel.summaryLine : "Run a scan automatically and get a summary notification.")
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.6))

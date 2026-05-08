@@ -57,6 +57,20 @@ struct Sidebar: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+
+            Button {
+                appState.help.open(at: nil)
+            } label: {
+                Image(systemName: "questionmark.circle")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .padding(6)
+                    .background(Circle().fill(Color.white.opacity(0.06)))
+                    .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .noFocusRing()
+            .help("Open help & glossary")
         }
     }
 

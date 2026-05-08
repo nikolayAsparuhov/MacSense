@@ -41,6 +41,14 @@
 		A1B2C3D4E5F60000AA000006 /* UnusedThreshold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000006 /* UnusedThreshold.swift */; };
 		A1B2C3D4E5F60000AA000007 /* LastUsedFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000007 /* LastUsedFetcher.swift */; };
 		A1B2C3D4E5F60000AA000008 /* UnusedAppsList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000008 /* UnusedAppsList.swift */; };
+		A1B2C3D4E5F60000AA000009 /* HelpEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000009 /* HelpEntry.swift */; };
+		A1B2C3D4E5F60000AA00000A /* HelpRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF00000A /* HelpRegistry.swift */; };
+		A1B2C3D4E5F60000AA00000B /* HelpController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF00000B /* HelpController.swift */; };
+		A1B2C3D4E5F60000AA00000C /* HelpIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF00000C /* HelpIcon.swift */; };
+		A1B2C3D4E5F60000AA00000D /* HelpPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF00000D /* HelpPopover.swift */; };
+		A1B2C3D4E5F60000AA00000E /* HelpDrawer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF00000E /* HelpDrawer.swift */; };
+		A1B2C3D4E5F60000AA00000F /* CoachMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF00000F /* CoachMark.swift */; };
+		A1B2C3D4E5F60000AA000010 /* HelpResources in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000010 /* Help */; };
 		656B469BF8800FE715F03FF9 /* CleanupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE1879F0DEBDAC1A58B52C9 /* CleanupView.swift */; };
 		686ABE1AC27697DF429CC78C /* PerformanceSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6721C14F199E82BFF79563 /* PerformanceSample.swift */; };
 		6C24963D51E75BCA4092925A /* HeroLanding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23BB3CCE382AAF74DEA1360F /* HeroLanding.swift */; };
@@ -125,6 +133,14 @@
 		A1B2C3D4E5F60000FF000006 /* UnusedThreshold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnusedThreshold.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000007 /* LastUsedFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastUsedFetcher.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000008 /* UnusedAppsList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnusedAppsList.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000009 /* HelpEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpEntry.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF00000A /* HelpRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpRegistry.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF00000B /* HelpController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpController.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF00000C /* HelpIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpIcon.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF00000D /* HelpPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpPopover.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF00000E /* HelpDrawer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpDrawer.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF00000F /* CoachMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachMark.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000010 /* Help */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Help; sourceTree = "<group>"; };
 		6333F8D7046FEEF59F599009 /* BubbleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubbleMapView.swift; sourceTree = "<group>"; };
 		6F001BA2C43C3F4B1B3361CE /* RollingNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RollingNumber.swift; sourceTree = "<group>"; };
 		6FC57895EC2155B58DD7E4FF /* AnimatedOrb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedOrb.swift; sourceTree = "<group>"; };
@@ -224,6 +240,7 @@
 				B6A6392AB2C36EF2DA1E553B /* Applications */,
 				2F37615BA933EF1E60EF8051 /* Cleanup */,
 				DD422C911A075E0557567D7A /* Components */,
+				A1B2C3D4E5F60000FF000020 /* Help */,
 				861C9C77A4B0C785D71BC9BB /* Onboarding */,
 				C8D231C81E2F48E0255D1748 /* Performance */,
 				015B3EF24210C4C483CD5988 /* Storage */,
@@ -252,6 +269,7 @@
 				F50E9C79774DB0013EBF1D95 /* Extensions */,
 				D10A0DD89468045528C2E7B6 /* Logic */,
 				F5865420E6E15E51ECEE388C /* Models */,
+				A1B2C3D4E5F60000FF000010 /* Help */,
 				19490A96A4A187E3709FEA9F /* Services */,
 				6E0DD3BAC485D2ACF8DC8AA6 /* Theme */,
 				D1A850EDEAB3E8A901FF098F /* ViewModels */,
@@ -318,6 +336,8 @@
 				F910479BCF1BCFBA887DAFFE /* Conditions.swift */,
 				5074546771C0797D21F34EAD /* Locations.swift */,
 				A1B2C3D4E5F60000FF000007 /* LastUsedFetcher.swift */,
+				A1B2C3D4E5F60000FF000009 /* HelpEntry.swift */,
+				A1B2C3D4E5F60000FF00000A /* HelpRegistry.swift */,
 				99F66E2DC820DED24B735653 /* Logger.swift */,
 				02CB715564FD2AB67F30A9B2 /* OrphanSafetyPolicy.swift */,
 				96C3C523855D4C369A2074C0 /* ScanCore.c */,
@@ -331,9 +351,21 @@
 			isa = PBXGroup;
 			children = (
 				E0EA17D7FC4E013EFAD3CE00 /* AppState.swift */,
+				A1B2C3D4E5F60000FF00000B /* HelpController.swift */,
 				A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */,
 			);
 			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F60000FF000020 /* Help */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60000FF00000C /* HelpIcon.swift */,
+				A1B2C3D4E5F60000FF00000D /* HelpPopover.swift */,
+				A1B2C3D4E5F60000FF00000E /* HelpDrawer.swift */,
+				A1B2C3D4E5F60000FF00000F /* CoachMark.swift */,
+			);
+			path = Help;
 			sourceTree = "<group>";
 		};
 		DD422C911A075E0557567D7A /* Components */ = {
@@ -444,6 +476,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4EB5FA7FC581306832F7B520 /* Assets.xcassets in Resources */,
+				A1B2C3D4E5F60000AA000010 /* HelpResources in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -522,6 +555,13 @@
 				A1B2C3D4E5F60000AA000006 /* UnusedThreshold.swift in Sources */,
 				A1B2C3D4E5F60000AA000007 /* LastUsedFetcher.swift in Sources */,
 				A1B2C3D4E5F60000AA000008 /* UnusedAppsList.swift in Sources */,
+				A1B2C3D4E5F60000AA000009 /* HelpEntry.swift in Sources */,
+				A1B2C3D4E5F60000AA00000A /* HelpRegistry.swift in Sources */,
+				A1B2C3D4E5F60000AA00000B /* HelpController.swift in Sources */,
+				A1B2C3D4E5F60000AA00000C /* HelpIcon.swift in Sources */,
+				A1B2C3D4E5F60000AA00000D /* HelpPopover.swift in Sources */,
+				A1B2C3D4E5F60000AA00000E /* HelpDrawer.swift in Sources */,
+				A1B2C3D4E5F60000AA00000F /* CoachMark.swift in Sources */,
 				97E0F17F6857B659D98825CD /* StorageView.swift in Sources */,
 				30F6BCBE19FA663021B955C1 /* String+NonEmpty.swift in Sources */,
 				53DEAB23036EE7B351D0E157 /* StringNormalization.swift in Sources */,

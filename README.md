@@ -195,7 +195,7 @@ See [`scripts/build-dmg.sh`](scripts/build-dmg.sh). Requires a Developer ID Appl
 
 - [x] Scheduled cleanup with notifications
 - [x] Uninstall unused apps last 90 days
-- [ ] Inline help + glossary
+- [x] Inline help + glossary
 - [ ] Localization (currently English-only)
 
 Have an idea? [Open an issue](https://github.com/nikolayAsparuhov/MacSense/issues/new) or send a PR.

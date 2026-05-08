@@ -125,6 +125,11 @@ struct SizeTabView: View {
                                 appState.toggleSizeNodeSelection(node)
                             }
                         )
+                        .coachMark(
+                            id: "bubbleMap",
+                            title: "Bubble Map",
+                            body: "Each circle is a folder, sized by what it consumes. Click any bubble to drill in; the breadcrumb tracks your path."
+                        )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         // Treat each folder as a distinct view so SwiftUI
                         // runs the configured transition on swap instead of
