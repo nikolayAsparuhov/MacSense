@@ -6,8 +6,17 @@ struct ApplicationsView: View {
 
     enum SubTab: String, CaseIterable, Identifiable {
         case installed  = "Installed Apps"
+        case unused     = "Unused"
         case loginItems = "Login Items"
         var id: String { rawValue }
+
+        var icon: String {
+            switch self {
+            case .installed:  return "square.grid.2x2.fill"
+            case .unused:     return "clock.badge.exclamationmark.fill"
+            case .loginItems: return "play.circle.fill"
+            }
+        }
     }
 
     var body: some View {
@@ -20,6 +29,9 @@ struct ApplicationsView: View {
                 switch subTab {
                 case .installed:
                     InstalledAppsList()
+                        .transition(.contentLift)
+                case .unused:
+                    UnusedAppsList()
                         .transition(.contentLift)
                 case .loginItems:
                     LoginItemsList()
@@ -38,7 +50,7 @@ struct ApplicationsView: View {
                     withAnimation(AppAnimation.sectionTransition) { subTab = tab }
                 } label: {
                     HStack(spacing: 7) {
-                        Image(systemName: tab == .installed ? "square.grid.2x2.fill" : "play.circle.fill")
+                        Image(systemName: tab.icon)
                             .font(.system(size: 12, weight: .bold))
                         Text(tab.rawValue)
                             .font(.system(size: 13, weight: .bold))

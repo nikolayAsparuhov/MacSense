@@ -38,6 +38,9 @@
 		A1B2C3D4E5F60000AA000003 /* BackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000003 /* BackgroundScheduler.swift */; };
 		A1B2C3D4E5F60000AA000004 /* ScheduleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */; };
 		A1B2C3D4E5F60000AA000005 /* ScheduleSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000005 /* ScheduleSection.swift */; };
+		A1B2C3D4E5F60000AA000006 /* UnusedThreshold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000006 /* UnusedThreshold.swift */; };
+		A1B2C3D4E5F60000AA000007 /* LastUsedFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000007 /* LastUsedFetcher.swift */; };
+		A1B2C3D4E5F60000AA000008 /* UnusedAppsList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000008 /* UnusedAppsList.swift */; };
 		656B469BF8800FE715F03FF9 /* CleanupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE1879F0DEBDAC1A58B52C9 /* CleanupView.swift */; };
 		686ABE1AC27697DF429CC78C /* PerformanceSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6721C14F199E82BFF79563 /* PerformanceSample.swift */; };
 		6C24963D51E75BCA4092925A /* HeroLanding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23BB3CCE382AAF74DEA1360F /* HeroLanding.swift */; };
@@ -119,6 +122,9 @@
 		A1B2C3D4E5F60000FF000003 /* BackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundScheduler.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000005 /* ScheduleSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleSection.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000006 /* UnusedThreshold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnusedThreshold.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000007 /* LastUsedFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastUsedFetcher.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000008 /* UnusedAppsList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnusedAppsList.swift; sourceTree = "<group>"; };
 		6333F8D7046FEEF59F599009 /* BubbleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubbleMapView.swift; sourceTree = "<group>"; };
 		6F001BA2C43C3F4B1B3361CE /* RollingNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RollingNumber.swift; sourceTree = "<group>"; };
 		6FC57895EC2155B58DD7E4FF /* AnimatedOrb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedOrb.swift; sourceTree = "<group>"; };
@@ -288,6 +294,7 @@
 				28DBBD0FFC4F58F1C9CEFDB6 /* InstalledAppsList.swift */,
 				2DF4F6845236B2981516A529 /* LoginItemsList.swift */,
 				1762B1B2FCE3E243955496DD /* UninstallSheet.swift */,
+				A1B2C3D4E5F60000FF000008 /* UnusedAppsList.swift */,
 			);
 			path = Applications;
 			sourceTree = "<group>";
@@ -310,6 +317,7 @@
 				2DB0A778AC4BC5D5FF66CF33 /* AppPathFinder.swift */,
 				F910479BCF1BCFBA887DAFFE /* Conditions.swift */,
 				5074546771C0797D21F34EAD /* Locations.swift */,
+				A1B2C3D4E5F60000FF000007 /* LastUsedFetcher.swift */,
 				99F66E2DC820DED24B735653 /* Logger.swift */,
 				02CB715564FD2AB67F30A9B2 /* OrphanSafetyPolicy.swift */,
 				96C3C523855D4C369A2074C0 /* ScanCore.c */,
@@ -370,6 +378,7 @@
 				820B147F15B20FDBCAE26A0B /* DevCacheTool.swift */,
 				F32CC6DA0839D94BECE2C292 /* ScanError.swift */,
 				C5AF85E6DC7368882B962D50 /* StorageNode.swift */,
+				A1B2C3D4E5F60000FF000006 /* UnusedThreshold.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -510,6 +519,9 @@
 				A1B2C3D4E5F60000AA000003 /* BackgroundScheduler.swift in Sources */,
 				A1B2C3D4E5F60000AA000004 /* ScheduleViewModel.swift in Sources */,
 				A1B2C3D4E5F60000AA000005 /* ScheduleSection.swift in Sources */,
+				A1B2C3D4E5F60000AA000006 /* UnusedThreshold.swift in Sources */,
+				A1B2C3D4E5F60000AA000007 /* LastUsedFetcher.swift in Sources */,
+				A1B2C3D4E5F60000AA000008 /* UnusedAppsList.swift in Sources */,
 				97E0F17F6857B659D98825CD /* StorageView.swift in Sources */,
 				30F6BCBE19FA663021B955C1 /* String+NonEmpty.swift in Sources */,
 				53DEAB23036EE7B351D0E157 /* StringNormalization.swift in Sources */,

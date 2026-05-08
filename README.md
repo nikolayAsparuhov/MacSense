@@ -194,7 +194,7 @@ See [`scripts/build-dmg.sh`](scripts/build-dmg.sh). Requires a Developer ID Appl
 ## 🗺 Roadmap
 
 - [x] Scheduled cleanup with notifications
-- [ ] Uninstall unused apps last 90 days
+- [x] Uninstall unused apps last 90 days
 - [ ] Inline help + glossary
 - [ ] Localization (currently English-only)
 

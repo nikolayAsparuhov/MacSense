@@ -30,6 +30,11 @@ struct InstalledApp: Identifiable, Hashable {
     /// `relatedSize` (folders that happened to be empty during the modal
     /// re-walk would render as 0 KB despite contributing to the total).
     var fileSizes: [URL: Int64]?
+    /// Last-used timestamp from Spotlight (`kMDItemLastUsedDate`).
+    /// `nil` means the app has either never been launched or its
+    /// Spotlight metadata isn't available — the Unused tab shows
+    /// these in a separate "Never opened" group.
+    var lastUsedDate: Date?
 
     /// Total size. When per-URL sizes have been captured, derive the
     /// total directly from them — that way the list cell, the modal
@@ -142,7 +147,8 @@ final class AppInfoFetcher {
             bundleIdentifier: bundleID,
             path: url,
             bundleSize: bundleSize,
-            relatedSize: nil
+            relatedSize: nil,
+            lastUsedDate: LastUsedFetcher.lastUsedDate(forAppAt: url)
         )
     }
 }
