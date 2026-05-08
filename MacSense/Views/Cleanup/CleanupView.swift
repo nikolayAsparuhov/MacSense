@@ -93,6 +93,7 @@ struct CleanupView: View {
                                 .cascadeAppear(index: idx, base: 0.04, step: 0.045, cap: 0.4)
                         }
                     }
+                    ScheduleSection(viewModel: appState.scheduleVM)
                 }
                 .padding(28)
             }

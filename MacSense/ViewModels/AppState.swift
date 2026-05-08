@@ -18,6 +18,7 @@ final class AppState: ObservableObject {
             // / scan results stay; re-entry re-hydrates from there.
             if oldValue != selectedSection {
                 releaseSectionMemory(leaving: oldValue)
+                hydrateSectionMemory(entering: selectedSection)
             }
         }
     }
@@ -31,15 +32,19 @@ final class AppState: ObservableObject {
     private func releaseSectionMemory(leaving section: AppSection) {
         switch section {
         case .storage:
+            // Drop the bulky tree but keep the lightweight summary
+            // (`storageReport`), the user's explicit-scan flag, and
+            // the cached snapshot. Re-entry rehydrates the graph from
+            // the snapshot — see `hydrateSectionMemory(entering:)`.
+            // Keeping these means the user sees their scan results
+            // immediately on every return within the session, instead
+            // of being bounced back to the hero.
             storageGraph = nil
-            storageReport = nil
             sizeNavStack = []
             sizeNavSelection.removeAll()
             trashedSizeNodeIDs.removeAll()
             storageSelectedFiles.removeAll()
             sizeNavPendingDelete = nil
-            userRequestedStorageScan = false
-            cachedSnapshot = nil
         case .applications:
             // Keep the lightweight list (name, bundle, icon, size)
             // but drop the heavy per-URL maps. Re-opening an app
@@ -55,6 +60,40 @@ final class AppState: ObservableObject {
             break
         }
     }
+
+    /// Counterpart to `releaseSectionMemory` — re-hydrate the heavy
+    /// state when the user re-enters a section. For Storage, this
+    /// rebuilds the graph from the cached snapshot (in-memory first,
+    /// disk fallback) so the bubble map renders immediately on
+    /// return without forcing a re-scan.
+    private func hydrateSectionMemory(entering section: AppSection) {
+        switch section {
+        case .storage:
+            guard userRequestedStorageScan, storageGraph == nil else { return }
+            if let snapshot = cachedSnapshot {
+                storageGraph = snapshot.graph
+                if storageReport == nil { storageReport = snapshot.toReport() }
+                if sizeNavStack.isEmpty { sizeNavStack = [snapshot.graph] }
+                return
+            }
+            // Snapshot was already dropped from memory but the report
+            // summary survived — pull the graph back from disk.
+            Task.detached(priority: .userInitiated) { [weak self] in
+                guard let snapshot = StorageSnapshotStore.load() else { return }
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+                    guard self.userRequestedStorageScan, self.storageGraph == nil else { return }
+                    self.cachedSnapshot = snapshot
+                    self.storageGraph = snapshot.graph
+                    if self.storageReport == nil { self.storageReport = snapshot.toReport() }
+                    if self.sizeNavStack.isEmpty { self.sizeNavStack = [snapshot.graph] }
+                }
+            }
+        case .applications, .cleanup, .performance:
+            break
+        }
+    }
+
     @Published var isSidebarCollapsed: Bool = false
     /// True once the user has opened the Performance section at least
     /// once. Sidebar uses this to suppress the health dot until the
@@ -144,6 +183,12 @@ final class AppState: ObservableObject {
     private let cleaningEngine = CleaningEngine()
     private let storageGraphScanner = StorageGraphScanner()
 
+    /// Backing model for the Schedule subsection inside Cleanup.
+    /// Owned here so a single instance survives the SwiftUI view
+    /// lifecycle and the BGTask handler can update it after a
+    /// scheduled scan finishes.
+    let scheduleVM = ScheduleViewModel()
+
     /// Cached snapshot from a prior scan, loaded silently on launch.
     /// Held privately so the sidebar dot and Storage page hero don't
     /// react to it — only revealed via `storageGraph` / `storageReport`
@@ -193,6 +238,19 @@ final class AppState: ObservableObject {
         // result lands on @Published so views render it when ready.
         Task { [weak self] in
             await self?.refreshPublicIP()
+        }
+        // Ask for notification permission once on first launch so
+        // scheduled-scan summaries can reach the user later. We don't
+        // gate scheduling on the result — the Schedule UI surfaces a
+        // banner with a System Settings shortcut when denied.
+        Task {
+            await NotificationsService.requestAuthorizationIfNeeded()
+        }
+        // If the user previously turned the schedule on, resume the
+        // recurring activity now. NSBackgroundActivityScheduler does
+        // not persist across app quits.
+        if scheduleVM.isEnabled {
+            BackgroundScheduler.submit(cadence: scheduleVM.cadence)
         }
     }
 
@@ -255,6 +313,45 @@ final class AppState: ObservableObject {
             await loadDiskInfo()
             isSmartScanRunning = false
         }
+    }
+
+    // MARK: - Scheduled scan
+
+    /// Worker invoked from the `BGTaskScheduler` launch handler. Runs
+    /// the user-selected cleanup categories sequentially, posts a
+    /// summary notification, persists the result on the schedule view
+    /// model, then re-submits the next request so the cadence keeps
+    /// going. Skips silently if a foreground Smart Scan is already
+    /// running — we don't want to thrash the same engine in parallel.
+    func runScheduledCleanupScan(task: BGTaskShim) async {
+        let vm = scheduleVM
+        guard vm.isEnabled, !vm.categories.isEmpty else {
+            task.complete(success: true)
+            return
+        }
+        // Don't run a parallel scan; the foreground Smart Scan already
+        // covers the same categories and writing into `categoryResults`
+        // from two paths at once would race the published state.
+        guard !isSmartScanRunning else {
+            task.complete(success: true)
+            return
+        }
+
+        let cats = Array(vm.categories)
+        var total: Int64 = 0
+        for cat in cats {
+            let result = await scanEngine.scanCategory(cat)
+            categoryResults[cat] = result
+            categoryStates[cat] = .scanned
+            total += result.totalSize
+        }
+
+        await NotificationsService.postCleanupSummary(
+            totalRecoverable: total,
+            categoryCount: cats.count
+        )
+        vm.recordRun(totalRecoverable: total)
+        task.complete(success: true)
     }
 
     // MARK: - Single category scan
@@ -750,18 +847,18 @@ final class AppState: ObservableObject {
 
             self.storageReport = report
             self.storageGraph = graph
-            // Drop the in-memory cached snapshot — fresh data has
-            // replaced it. Holding both doubled the resident-set
-            // size of the storage tree (often 100-500 MB on busy
-            // Macs) for no benefit.
-            self.cachedSnapshot = nil
 
             // Re-anchor breadcrumb so the Size tab shows the fresh root.
             self.sizeNavStack = [graph]
             self.isScanningStorage = false
             self.currentScanEpoch = nil
 
+            // Replace the cached snapshot with fresh data. Kept in
+            // memory (instead of nil-ing) so re-entering Storage
+            // after navigating away can rehydrate the graph
+            // instantly without a disk read.
             let snapshot = StorageSnapshot.from(graph: graph, report: report)
+            self.cachedSnapshot = snapshot
             Task.detached(priority: .background) {
                 StorageSnapshotStore.save(snapshot)
             }

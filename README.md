@@ -193,12 +193,10 @@ See [`scripts/build-dmg.sh`](scripts/build-dmg.sh). Requires a Developer ID Appl
 
 ## 🗺 Roadmap
 
-- [ ] Smart Scan presets ("safe", "aggressive", "dev")
-- [ ] Scheduled cleanup with notifications
-- [ ] Per-app uninstaller suggestions ("you haven't used X in 90 days")
-- [ ] Disk graph diff between two scans
+- [x] Scheduled cleanup with notifications
+- [ ] Uninstall unused apps last 90 days
+- [ ] Inline help + glossary
 - [ ] Localization (currently English-only)
-- [ ] Help center / inline docs
 
 Have an idea? [Open an issue](https://github.com/nikolayAsparuhov/MacSense/issues/new) or send a PR.
 

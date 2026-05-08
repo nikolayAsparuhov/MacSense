@@ -33,6 +33,11 @@
 		61D5987AF392F85D29C4EA7B /* PerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F3A93978CFF2BA03A618D48 /* PerformanceMonitor.swift */; };
 		64172FCE7F1ABCBB15E6CEF0 /* FullDiskAccessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 213B613B0CD8E3CC52F1BDC1 /* FullDiskAccessManager.swift */; };
 		646704E318DD27B2D04C8766 /* StorageSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 626D3B584477AD4D2E50D26B /* StorageSnapshotStore.swift */; };
+		A1B2C3D4E5F60000AA000001 /* NotificationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000001 /* NotificationsService.swift */; };
+		A1B2C3D4E5F60000AA000002 /* ScheduleSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000002 /* ScheduleSettingsStore.swift */; };
+		A1B2C3D4E5F60000AA000003 /* BackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000003 /* BackgroundScheduler.swift */; };
+		A1B2C3D4E5F60000AA000004 /* ScheduleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */; };
+		A1B2C3D4E5F60000AA000005 /* ScheduleSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000005 /* ScheduleSection.swift */; };
 		656B469BF8800FE715F03FF9 /* CleanupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE1879F0DEBDAC1A58B52C9 /* CleanupView.swift */; };
 		686ABE1AC27697DF429CC78C /* PerformanceSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6721C14F199E82BFF79563 /* PerformanceSample.swift */; };
 		6C24963D51E75BCA4092925A /* HeroLanding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23BB3CCE382AAF74DEA1360F /* HeroLanding.swift */; };
@@ -109,6 +114,11 @@
 		5DF810FA8248AF99D188D364 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		61EA35F862BF67F0FF7F3E2A /* CleaningCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleaningCategory.swift; sourceTree = "<group>"; };
 		626D3B584477AD4D2E50D26B /* StorageSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageSnapshotStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000001 /* NotificationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000002 /* ScheduleSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleSettingsStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000003 /* BackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundScheduler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViewModel.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF000005 /* ScheduleSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleSection.swift; sourceTree = "<group>"; };
 		6333F8D7046FEEF59F599009 /* BubbleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubbleMapView.swift; sourceTree = "<group>"; };
 		6F001BA2C43C3F4B1B3361CE /* RollingNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RollingNumber.swift; sourceTree = "<group>"; };
 		6FC57895EC2155B58DD7E4FF /* AnimatedOrb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedOrb.swift; sourceTree = "<group>"; };
@@ -182,12 +192,15 @@
 		19490A96A4A187E3709FEA9F /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60000FF000003 /* BackgroundScheduler.swift */,
 				11989E0971DB1CB7EF1E07EC /* CleaningEngine.swift */,
 				213B613B0CD8E3CC52F1BDC1 /* FullDiskAccessManager.swift */,
 				750CDD56026C09A686D5660A /* LoginItemScanner.swift */,
 				F81787D97552A44771E32B9E /* NetworkScanner.swift */,
+				A1B2C3D4E5F60000FF000001 /* NotificationsService.swift */,
 				4F3A93978CFF2BA03A618D48 /* PerformanceMonitor.swift */,
 				C56EE8F9395A1A64F9DD6932 /* ScanEngine.swift */,
+				A1B2C3D4E5F60000FF000002 /* ScheduleSettingsStore.swift */,
 				ED6349498DBE71C6BAF594A3 /* StorageGraphScanner.swift */,
 				626D3B584477AD4D2E50D26B /* StorageSnapshotStore.swift */,
 				4B88D33A0A4B72EDA6058CB3 /* TopKHeap.swift */,
@@ -217,6 +230,7 @@
 			children = (
 				422CA62A8A7CFB6B24F0D1B2 /* CategoryDetailSheet.swift */,
 				8AE1879F0DEBDAC1A58B52C9 /* CleanupView.swift */,
+				A1B2C3D4E5F60000FF000005 /* ScheduleSection.swift */,
 			);
 			path = Cleanup;
 			sourceTree = "<group>";
@@ -309,6 +323,7 @@
 			isa = PBXGroup;
 			children = (
 				E0EA17D7FC4E013EFAD3CE00 /* AppState.swift */,
+				A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -490,6 +505,11 @@
 				DF14887D4EFDFAEFF539E528 /* StorageGraphScanner.swift in Sources */,
 				2CCECEE90047D1D2B1A82E0D /* StorageNode.swift in Sources */,
 				646704E318DD27B2D04C8766 /* StorageSnapshotStore.swift in Sources */,
+				A1B2C3D4E5F60000AA000001 /* NotificationsService.swift in Sources */,
+				A1B2C3D4E5F60000AA000002 /* ScheduleSettingsStore.swift in Sources */,
+				A1B2C3D4E5F60000AA000003 /* BackgroundScheduler.swift in Sources */,
+				A1B2C3D4E5F60000AA000004 /* ScheduleViewModel.swift in Sources */,
+				A1B2C3D4E5F60000AA000005 /* ScheduleSection.swift in Sources */,
 				97E0F17F6857B659D98825CD /* StorageView.swift in Sources */,
 				30F6BCBE19FA663021B955C1 /* String+NonEmpty.swift in Sources */,
 				53DEAB23036EE7B351D0E157 /* StringNormalization.swift in Sources */,
