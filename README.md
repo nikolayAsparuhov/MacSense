@@ -6,10 +6,11 @@
 
 <img src="docs/screenshots/hero.png" alt="MacSense hero screenshot" width="820" />
 
-[Quickstart](#-quickstart) · [Features](#-features-at-a-glance) · [Screenshots](#-screenshots) · [Build from source](#-build-from-source) · [Roadmap](#-roadmap)
+[Download](https://github.com/nikolayAsparuhov/MacSense/releases/latest) · [Quickstart](#-quickstart) · [Features](#-features-at-a-glance) · [Screenshots](#-screenshots) · [FAQ](#-faq) · [Changelog](CHANGELOG.md)
 
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/macOS-13%2B-blue.svg)](#)
+[![Universal](https://img.shields.io/badge/binary-universal%20(Intel%20%2B%20Apple%20Silicon)-blueviolet.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/nikolayAsparuhov/MacSense/actions/workflows/build.yml/badge.svg)](https://github.com/nikolayAsparuhov/MacSense/actions)
 
@@ -17,7 +18,7 @@
 
 ---
 
-CleanMyMac and the like are subscription tools that mostly wrap commands you can run yourself. MacSense surfaces the same insights — system junk, dev caches, login items, large files, live performance, network details — without a paywall, telemetry, or background daemon. Open it when you need it, close it when you don't.
+One native app for the four things you actually open a Mac utility for: clean junk, manage startup apps, watch live performance, visualize disk usage. No subscription. No telemetry. No background daemon. Open it when you need it, close it when you don't.
 
 ## ✨ Why MacSense
 
@@ -60,26 +61,48 @@ CleanMyMac and the like are subscription tools that mostly wrap commands you can
 <td>
 
 ### ⚡️ Native SwiftUI
-<sub>No Electron, no helper daemon. ~80 MB binary. Idle RAM bounded by aggressive cleanup on tab switch.</sub>
+<sub>No Electron, no helper daemon. Universal binary, ~80 MB. Idle RAM bounded by aggressive cleanup on tab switch.</sub>
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🌍 9 languages
+<sub>English, German, Spanish, French, Hindi, Portuguese, Russian, Chinese (Simplified), Bengali. Help drawer localized.</sub>
+
+</td>
+<td>
+
+### 🖥 Intel + Apple Silicon
+<sub>Universal binary built and tested on both architectures. Runs on any Mac with macOS 13 Ventura or newer.</sub>
 
 </td>
 </tr>
 </table>
 
+## 📦 Requirements
+
+- macOS 13 Ventura or newer
+- ~80 MB disk space
+- Intel or Apple Silicon Mac
+
 ## 🚀 Quickstart
 
-**Download** the latest `MacSense.dmg` from [Releases](https://github.com/nikolayAsparuhov/MacSense/releases), drag the app into `/Applications`, launch.
+1. Download the latest **`MacSense.dmg`** from [Releases](https://github.com/nikolayAsparuhov/MacSense/releases/latest).
+2. Open the DMG, drag `MacSense.app` into `/Applications`.
+3. Launch from Launchpad or Spotlight.
 
-Or build it yourself:
+The DMG is signed with a Developer ID Application certificate and notarized by Apple — Gatekeeper opens it on first launch without warnings.
+
+Verify the download (optional):
 
 ```bash
-git clone https://github.com/nikolayAsparuhov/MacSense.git
-cd MacSense
-brew install xcodegen           # one-time, only if regenerating the project
-open MacSense.xcodeproj         # then ⌘R in Xcode
+shasum -a 256 MacSense.dmg
+# compare against the SHA-256 listed on the Releases page
 ```
 
-That's it. No services to install, no permissions to grant up front.
+No services to install. No permissions granted up front — MacSense asks for Full Disk Access only when you scan a path that needs it.
 
 ## 🎯 First Steps
 
@@ -160,7 +183,8 @@ Installed-app inventory with combined size (bundle + caches + prefs + containers
 ### ⚡ Performance
 Live CPU / memory / disk / network / battery / thermal · Top processes table with kill action · Network device scan · Wi-Fi + Ethernet diagnostics · Flush DNS
 
-## 🛠 Build from source
+<details>
+<summary><b>🛠 Build from source</b></summary>
 
 Requirements:
 
@@ -183,6 +207,8 @@ xcodebuild -project MacSense.xcodeproj -scheme MacSense \
 open build/Build/Products/Debug/MacSense.app
 ```
 
+Universal binary build settings (`ARCHS = arm64 x86_64`) produce a single app that runs natively on both Apple Silicon and Intel.
+
 ### Building a signed DMG
 
 See [`scripts/build-dmg.sh`](scripts/build-dmg.sh). Requires a Developer ID Application certificate; falls back to ad-hoc signed for local testing.
@@ -191,14 +217,44 @@ See [`scripts/build-dmg.sh`](scripts/build-dmg.sh). Requires a Developer ID Appl
 ./scripts/build-dmg.sh
 ```
 
-## 🗺 Roadmap
+</details>
 
-- [x] Scheduled cleanup with notifications
-- [x] Uninstall unused apps last 90 days
-- [x] Inline help + glossary
-- [ ] Localization (currently English-only)
+## ❓ FAQ
 
-Have an idea? [Open an issue](https://github.com/nikolayAsparuhov/MacSense/issues/new) or send a PR.
+<details>
+<summary><b>Is MacSense signed and notarized?</b></summary>
+
+Yes. Release DMGs are signed with a Developer ID Application certificate and notarized by Apple. Gatekeeper accepts them without warnings. The DMG signature can be verified with `codesign --verify --verbose /Applications/MacSense.app` and `spctl -a -t open --context context:primary-signature MacSense.dmg`.
+
+</details>
+
+<details>
+<summary><b>Why does MacSense ask for Full Disk Access?</b></summary>
+
+System junk, user caches, and Time Machine snapshot scanning all touch directories that macOS protects behind TCC. Without Full Disk Access you can still use Storage, Performance, and Applications — only the deep cleanup categories will show empty results. MacSense never reads file contents, only sizes and modification dates.
+
+</details>
+
+<details>
+<summary><b>Does MacSense send any data off my Mac?</b></summary>
+
+No analytics, no crash reporters, no account, no telemetry. The single outbound call the app ever makes is an opt-in public-IP lookup against `api.ipify.org` (with `ifconfig.me`, `icanhazip.com`, `ipv4.icanhazip.com` as fallbacks) — you control when it runs. Disable your network and everything else works fully offline.
+
+</details>
+
+<details>
+<summary><b>Can MacSense break my system?</b></summary>
+
+Cleanup actions move files to the Trash, never `unlink` directly — you can restore anything until you empty the bin. Login items registered through SMAppService (Apple's recommended API) cannot be modified by third-party apps; MacSense shows you what is registered and links to System Settings → Login Items for changes. Every multi-file delete is confirmed first.
+
+</details>
+
+<details>
+<summary><b>Why isn't dev cache X listed?</b></summary>
+
+The dev-cache catalog is data-driven and lives in `MacSense/Models/CleaningCategory.swift`. PRs adding new tools are welcome — include the install path, default cache location, and one screenshot of the category populated with real data.
+
+</details>
 
 ## 🔒 Privacy + safety
 
@@ -229,4 +285,6 @@ Quick rules:
 
 - [Open an issue](https://github.com/nikolayAsparuhov/MacSense/issues) for bugs and feature requests
 - [Discussions](https://github.com/nikolayAsparuhov/MacSense/discussions) for questions and ideas
+- [Releases](https://github.com/nikolayAsparuhov/MacSense/releases) for version history and SHA-256 checksums
+- [Changelog](CHANGELOG.md) for what changed between versions
 - Star the repo if MacSense saved you some disk ⭐

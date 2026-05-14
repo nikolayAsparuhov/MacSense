@@ -5,6 +5,7 @@ import SwiftUI
 /// backdrop tap, and via the in-header dismiss button.
 struct HelpDrawer: View {
     @ObservedObject var controller: HelpController
+    @ObservedObject private var loc = Localization.shared
 
     private var filteredEntries: [HelpEntry] {
         HelpRegistry.search(controller.searchQuery)
@@ -66,7 +67,7 @@ struct HelpDrawer: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField("Search help", text: $controller.searchQuery)
+                TextField(loc.t(.helpSearchPlaceholder), text: $controller.searchQuery)
                     .textFieldStyle(.plain)
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
@@ -111,7 +112,7 @@ struct HelpDrawer: View {
     private var detail: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text(selectedEntry?.title ?? "Help")
+                Text(selectedEntry?.title ?? loc.t(.helpTitle))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white)
                 Spacer()
@@ -135,15 +136,13 @@ struct HelpDrawer: View {
 
             ScrollView {
                 if let entry = selectedEntry {
-                    Text(renderedBody(for: entry))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.85))
+                    MarkdownBlockView(source: entry.body)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 22)
                         .padding(.vertical, 18)
                         .textSelection(.enabled)
                 } else {
-                    Text("No entries match your search.")
+                    Text(loc.t(.helpNoMatches))
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 22).padding(.top, 18)
@@ -151,17 +150,121 @@ struct HelpDrawer: View {
             }
         }
     }
+}
 
-    /// Render the markdown body with `AttributedString(markdown:)`.
-    /// Inline-only options keep paragraphs separated and let the
-    /// `Text` view break lines naturally.
-    private func renderedBody(for entry: HelpEntry) -> AttributedString {
+/// Block-level markdown renderer for help entries. SwiftUI's
+/// built-in `Text(AttributedString)` only honors *inline* markdown —
+/// headings, lists, and blank lines collapse into one line. This view
+/// splits the source into blocks and renders each with the right
+/// font + spacing, while still using `AttributedString(markdown:)`
+/// per block so inline `code`, **bold**, *italic* keep working.
+private struct MarkdownBlockView: View {
+    let source: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                renderBlock(block)
+            }
+        }
+    }
+
+    private enum Block {
+        case h1(String)
+        case h2(String)
+        case paragraph(String)
+        case bullet([String])
+    }
+
+    private var blocks: [Block] {
+        var result: [Block] = []
+        var paragraph: [String] = []
+        var bullets: [String] = []
+
+        func flushParagraph() {
+            if !paragraph.isEmpty {
+                result.append(.paragraph(paragraph.joined(separator: " ")))
+                paragraph.removeAll()
+            }
+        }
+        func flushBullets() {
+            if !bullets.isEmpty {
+                result.append(.bullet(bullets))
+                bullets.removeAll()
+            }
+        }
+
+        let lines = source.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }).map(String.init)
+        for raw in lines {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.isEmpty {
+                flushParagraph()
+                flushBullets()
+                continue
+            }
+            if line.hasPrefix("# ") {
+                flushParagraph(); flushBullets()
+                result.append(.h1(String(line.dropFirst(2))))
+            } else if line.hasPrefix("## ") {
+                flushParagraph(); flushBullets()
+                result.append(.h2(String(line.dropFirst(3))))
+            } else if line.hasPrefix("- ") {
+                flushParagraph()
+                bullets.append(String(line.dropFirst(2)))
+            } else {
+                flushBullets()
+                paragraph.append(line)
+            }
+        }
+        flushParagraph()
+        flushBullets()
+        return result
+    }
+
+    @ViewBuilder
+    private func renderBlock(_ block: Block) -> some View {
+        switch block {
+        case .h1(let text):
+            // The `# Title` line is already shown in the drawer
+            // header, so render H1s discreetly.
+            Text(inlineMarkdown(text))
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.top, 4)
+        case .h2(let text):
+            Text(inlineMarkdown(text))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.top, 6)
+        case .paragraph(let text):
+            Text(inlineMarkdown(text))
+                .font(.system(size: 13))
+                .foregroundStyle(.white.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+        case .bullet(let items):
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("•")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.Palette.cyan)
+                        Text(inlineMarkdown(item))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+    }
+
+    private func inlineMarkdown(_ text: String) -> AttributedString {
         let opts = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .inlineOnlyPreservingWhitespace
         )
-        if let attributed = try? AttributedString(markdown: entry.body, options: opts) {
-            return attributed
+        if let attr = try? AttributedString(markdown: text, options: opts) {
+            return attr
         }
-        return AttributedString(entry.body)
+        return AttributedString(text)
     }
 }

@@ -39,11 +39,11 @@ struct PerformanceSample {
 enum MemoryPressure: String {
     case normal, warning, critical
 
-    var label: String {
+    var labelKey: LocalizationKey {
         switch self {
-        case .normal:   return "Normal"
-        case .warning:  return "Warning"
-        case .critical: return "Critical"
+        case .normal:   return .memoryNormal
+        case .warning:  return .memoryWarning
+        case .critical: return .memoryCritical
         }
     }
 }
@@ -51,24 +51,25 @@ enum MemoryPressure: String {
 enum BatteryHealth: String {
     case good, fair, poor, unknown
 
+    @MainActor
     var label: String {
         switch self {
-        case .good:    return "Normal"
-        case .fair:    return "Fair"
-        case .poor:    return "Service recommended"
+        case .good:    return Localization.shared.t(.batteryHealthGood)
+        case .fair:    return Localization.shared.t(.batteryHealthFair)
+        case .poor:    return Localization.shared.t(.batteryHealthPoor)
         case .unknown: return ""
         }
     }
 }
 
 extension ProcessInfo.ThermalState {
-    var label: String {
+    var labelKey: LocalizationKey? {
         switch self {
-        case .nominal:  return "Nominal"
-        case .fair:     return "Fair"
-        case .serious:  return "Serious"
-        case .critical: return "Critical"
-        @unknown default: return "—"
+        case .nominal:  return .thermalNominal
+        case .fair:     return .thermalFair
+        case .serious:  return .thermalSerious
+        case .critical: return .thermalCritical
+        @unknown default: return nil
         }
     }
 }

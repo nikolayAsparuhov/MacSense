@@ -46,9 +46,9 @@ struct LargeFilesSheet: View {
                 .frame(width: 36, height: 36)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Large & old files")
+                Text(Localization.shared.t(.largeFilesTitle))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
-                Text("Review files over 100 MB or older than 1 year before sending them to Trash.")
+                Text(Localization.shared.t(.largeFilesTagline))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -70,7 +70,7 @@ struct LargeFilesSheet: View {
         HStack(spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search files", text: $search).textFieldStyle(.plain)
+                TextField(Localization.shared.t(.commonSearchFiles), text: $search).textFieldStyle(.plain)
             }
             .padding(.horizontal, 10).padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(.quaternary.opacity(0.4)))
@@ -168,14 +168,14 @@ struct LargeFilesSheet: View {
 
     private var footer: some View {
         HStack(spacing: 10) {
-            Button("Select all")  { appState.selectAllStorage() }.buttonStyle(.soft)
-            Button("Deselect all") { appState.deselectAllStorage() }.buttonStyle(.soft)
+            Button(Localization.shared.t(.commonSelectAll))  { appState.selectAllStorage() }.buttonStyle(.soft)
+            Button(Localization.shared.t(.commonDeselectAll)) { appState.deselectAllStorage() }.buttonStyle(.soft)
             Spacer()
             Button {
                 appState.trashStorageSelection()
                 dismiss()
             } label: {
-                Text("Move \(appState.storageSelectedFiles.count) to Trash (\(ByteCountFormatter.string(fromByteCount: appState.storageSelectedSize(), countStyle: .file)))")
+                Text(Localization.shared.t(.largeFilesMoveFormat, appState.storageSelectedFiles.count, ByteCountFormatter.string(fromByteCount: appState.storageSelectedSize(), countStyle: .file)))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 7)

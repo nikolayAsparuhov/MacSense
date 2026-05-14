@@ -7,6 +7,7 @@ import AppKit
 /// subset of cleanup categories.
 struct ScheduleSection: View {
     @ObservedObject var viewModel: ScheduleViewModel
+    @ObservedObject private var loc = Localization.shared
 
     var body: some View {
         GlossyCard(accent: Theme.sectionGradient(for: .cleanup), accentColor: Theme.Palette.cyan) {
@@ -24,7 +25,7 @@ struct ScheduleSection: View {
                         lastRunRow(date: last)
                     }
                 } else {
-                    Text("Off — MacSense will not run scans in the background.")
+                    Text(loc.t(.scheduleOff))
                         .font(.system(size: 12))
                         .foregroundStyle(.white.opacity(0.55))
                 }
@@ -44,12 +45,12 @@ struct ScheduleSection: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text("Scheduled scan")
+                    Text(loc.t(.scheduleTitle))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white)
                     HelpIcon(entryID: "scheduled-cleanup")
                 }
-                Text(viewModel.isEnabled ? viewModel.summaryLine : "Run a scan automatically and get a summary notification.")
+                Text(viewModel.isEnabled ? localizedSummary : loc.t(.scheduleTaglineDisabled))
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -71,11 +72,11 @@ struct ScheduleSection: View {
             Image(systemName: "bell.slash")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.Palette.amber)
-            Text("Notifications are off — turn them on in System Settings to receive scan summaries.")
+            Text(loc.t(.schedulePermissionDenied))
                 .font(.system(size: 12))
                 .foregroundStyle(.white.opacity(0.85))
             Spacer()
-            Button("Open Settings") {
+            Button(loc.t(.schedulePermissionOpenSettings)) {
                 NotificationsService.openNotificationSettings()
             }
             .buttonStyle(.plain)
@@ -91,7 +92,7 @@ struct ScheduleSection: View {
 
     private var cadencePicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Cadence")
+            Text(loc.t(.scheduleCadence))
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.7))
             HStack(spacing: 8) {
@@ -100,7 +101,7 @@ struct ScheduleSection: View {
                     Button {
                         viewModel.setCadence(value)
                     } label: {
-                        Text(value.label)
+                        Text(loc.t(value.labelKey))
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(isActive ? .white : .white.opacity(0.7))
                             .padding(.horizontal, 14).padding(.vertical, 6)
@@ -121,7 +122,7 @@ struct ScheduleSection: View {
 
     private var categoryList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Categories")
+            Text(loc.t(.scheduleCategories))
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.7))
             VStack(spacing: 6) {
@@ -140,7 +141,7 @@ struct ScheduleSection: View {
                             .foregroundStyle(.white.opacity(0.7))
                             .frame(width: 18)
 
-                        Text(cat.rawValue)
+                        Text(loc.t(cat.titleKey))
                             .font(.system(size: 13))
                             .foregroundStyle(.white.opacity(0.9))
                         Spacer()
@@ -154,10 +155,19 @@ struct ScheduleSection: View {
     // MARK: - Constraint note + last-run row
 
     private var constraintNote: some View {
-        Text("Schedules run while MacSense is open or recently active. macOS may delay background tasks.")
+        Text(loc.t(.scheduleConstraintNote))
             .font(.system(size: 11))
             .foregroundStyle(.white.opacity(0.45))
             .padding(.top, 2)
+    }
+
+    /// Builds the "Weekly · 4 categories" hint without leaning on
+    /// `viewModel.summaryLine` (which is hardcoded English).
+    private var localizedSummary: String {
+        let cadence = loc.t(viewModel.cadence.labelKey)
+        let count = viewModel.categories.count
+        let unit = loc.t(count == 1 ? .scheduleSummaryUnit : .scheduleSummaryUnits)
+        return "\(cadence) · \(count) \(unit)"
     }
 
     private func lastRunRow(date: Date) -> some View {
@@ -169,7 +179,7 @@ struct ScheduleSection: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Theme.Palette.mint)
-            Text("Last run \(relative) — \(bytes) recoverable")
+            Text("\(loc.t(.scheduleLastRunPrefix)) \(relative) — \(loc.t(.scheduleLastRunSuffix, bytes))")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(.white.opacity(0.7))
             Spacer()

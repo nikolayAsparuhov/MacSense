@@ -81,17 +81,18 @@ fi
 DMG_FLAGS=(
     --volname "$SCHEME $VERSION"
     --window-pos 200 120
-    --window-size 600 400
-    --icon-size 110
-    --icon "$SCHEME.app" 150 200
+    --window-size 540 380
+    --icon-size 128
+    --icon "$SCHEME.app" 140 190
     --hide-extension "$SCHEME.app"
-    --app-drop-link 450 200
+    --app-drop-link 400 190
     --no-internet-enable
 )
 
-# Optional polish — drop these into Resources/ to use them
+# Volume icon (Finder sidebar). No background image and no helper
+# text — keeps the install window clean on every screen size and
+# avoids the resize artifacts you get with a fixed background.
 [ -f "$ROOT/Resources/dmg-volume.icns" ] && DMG_FLAGS+=(--volicon "$ROOT/Resources/dmg-volume.icns")
-[ -f "$ROOT/Resources/dmg-background.png" ] && DMG_FLAGS+=(--background "$ROOT/Resources/dmg-background.png")
 
 create-dmg "${DMG_FLAGS[@]}" "$DMG" "$APP"
 

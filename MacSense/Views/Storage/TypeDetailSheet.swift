@@ -58,10 +58,10 @@ struct ExpandedTypeCard: View {
                 .frame(width: 36, height: 36)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(type.label)
+                Text(Localization.shared.t(type.labelKey))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                Text("\(files.count) files · \(ByteCountFormatter.string(fromByteCount: files.reduce(0) { $0 + $1.size }, countStyle: .file))")
+                Text(Localization.shared.t(.typeDetailFilesCountFormat, files.count, ByteCountFormatter.string(fromByteCount: files.reduce(0) { $0 + $1.size }, countStyle: .file)))
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -83,7 +83,7 @@ struct ExpandedTypeCard: View {
         HStack(spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.white.opacity(0.6))
-                TextField("Search files", text: $search)
+                TextField(Localization.shared.t(.commonSearchFiles), text: $search)
                     .textFieldStyle(.plain)
                     .foregroundStyle(.white)
             }
@@ -91,7 +91,7 @@ struct ExpandedTypeCard: View {
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(.white.opacity(0.06)))
             .frame(width: 240)
             Spacer()
-            Text("Top 200 by size")
+            Text(Localization.shared.t(.typeDetailTopFormat))
                 .font(.system(size: 10))
                 .foregroundStyle(.white.opacity(0.5))
         }
@@ -163,14 +163,14 @@ struct ExpandedTypeCard: View {
 
     private var footer: some View {
         HStack(spacing: 10) {
-            Button("Select all")  { selected = Set(visible.map(\.id)) }.buttonStyle(.soft)
-            Button("Deselect all") { selected.removeAll() }.buttonStyle(.soft)
+            Button(Localization.shared.t(.commonSelectAll))  { selected = Set(visible.map(\.id)) }.buttonStyle(.soft)
+            Button(Localization.shared.t(.commonDeselectAll)) { selected.removeAll() }.buttonStyle(.soft)
             Spacer()
             Button {
                 appState.trashStorageItems(selectedItems)
                 onClose()
             } label: {
-                Text("Move \(selected.count) to Trash (\(ByteCountFormatter.string(fromByteCount: selectedSize, countStyle: .file)))")
+                Text(Localization.shared.t(.largeFilesMoveFormat, selected.count, ByteCountFormatter.string(fromByteCount: selectedSize, countStyle: .file)))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 7)

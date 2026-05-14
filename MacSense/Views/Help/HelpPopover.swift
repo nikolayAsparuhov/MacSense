@@ -8,6 +8,7 @@ struct HelpPopover: View {
     let entryID: String
     let onReadMore: (String) -> Void
 
+    @ObservedObject private var loc = Localization.shared
     private var entry: HelpEntry? { HelpRegistry.entry(id: entryID) }
 
     var body: some View {
@@ -24,7 +25,7 @@ struct HelpPopover: View {
                     onReadMore(entry.id)
                 } label: {
                     HStack(spacing: 4) {
-                        Text("Read more")
+                        Text(loc.t(.helpReadMore))
                         Image(systemName: "arrow.right")
                     }
                     .font(.system(size: 12, weight: .semibold))
@@ -33,9 +34,9 @@ struct HelpPopover: View {
                 .foregroundStyle(Theme.Palette.cyan)
                 .noFocusRing()
             } else {
-                Text("Help entry missing")
+                Text(loc.t(.helpEntryMissing))
                     .font(.system(size: 13, weight: .semibold))
-                Text("`\(entryID)` was not found in the bundle.")
+                Text(loc.t(.helpEntryMissingBody, entryID))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }

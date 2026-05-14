@@ -3,12 +3,13 @@ import SwiftUI
 enum StorageTab: String, CaseIterable, Identifiable {
     case size, type
     var id: String { rawValue }
-    var label: String { self == .size ? "Size" : "Type" }
+    var labelKey: LocalizationKey { self == .size ? .storageTabSize : .storageTabType }
     var icon: String { self == .size ? "circle.grid.3x3.fill" : "square.grid.2x2.fill" }
 }
 
 struct StorageView: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var loc = Localization.shared
     @State private var tab: StorageTab = .size
 
     /// Show the detail layout only after the user has explicitly clicked
@@ -36,10 +37,10 @@ struct StorageView: View {
 
     private var heroLayout: some View {
         HeroLanding(
-            title: "Storage",
-            tagline: "See what's taking up your disk by media type and reclaim space from large or untouched files.",
+            title: loc.t(.storageTitle),
+            tagline: loc.t(.storageTagline),
             secondaryActionTitle: nil, secondaryAction: nil,
-            ctaTitle: "Scan",
+            ctaTitle: loc.t(.commonScan),
             ctaIcon: nil,
             ctaGradient: Theme.sectionGradient(for: .storage),
             ctaGlow: Theme.accent(for: .storage),
@@ -49,7 +50,7 @@ struct StorageView: View {
             },
             isScanning: appState.isScanningStorage,
             scanProgress: nil,
-            scanLabel: "Scanning files…"
+            scanLabel: loc.t(.storageScanningFiles)
         ) {
             Hero3DIcon.forSection(.storage, size: 220)
                 .frame(height: 320)
@@ -83,7 +84,7 @@ struct StorageView: View {
                     HStack(spacing: 6) {
                         Image(systemName: t.icon)
                             .font(.system(size: 11, weight: .bold))
-                        Text(t.label)
+                        Text(loc.t(t.labelKey))
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundStyle(tab == t ? Color.white : Color.white.opacity(0.6))
@@ -101,7 +102,7 @@ struct StorageView: View {
 
             Spacer()
 
-            Text("\(appState.diskInfo.formattedUsed) used · \(appState.diskInfo.formattedFree) free")
+            Text(loc.t(.storageUsedFreeFormat, appState.diskInfo.formattedUsed, appState.diskInfo.formattedFree))
                 .font(.system(size: 11, weight: .medium).monospacedDigit())
                 .foregroundStyle(.white.opacity(0.55))
 
@@ -109,7 +110,7 @@ struct StorageView: View {
             if appState.isScanningStorage {
                 HStack(spacing: 6) {
                     ProgressView().controlSize(.small).tint(Theme.accent(for: .storage))
-                    Text("Scanning…")
+                    Text(loc.t(.storageScanning))
                 }
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.85))
@@ -121,7 +122,7 @@ struct StorageView: View {
                 Button { appState.scanStorage() } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.clockwise")
-                        Text("Re-scan")
+                        Text(loc.t(.storageReScan))
                     }
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.85))

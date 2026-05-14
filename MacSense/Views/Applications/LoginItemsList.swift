@@ -11,7 +11,7 @@ struct LoginItemsList: View {
 
     private enum ScopeGroup: String, CaseIterable {
         case user, system
-        var title: String { self == .user ? "User" : "System" }
+        var titleKey: LocalizationKey { self == .user ? .loginItemsUserGroup : .loginItemsSystemGroup }
         var icon: String { self == .user ? "person.crop.circle" : "gearshape.2" }
     }
 
@@ -47,7 +47,7 @@ struct LoginItemsList: View {
                 .padding(.bottom, 14)
 
             if appState.isLoadingLoginItems && appState.loginItems.isEmpty {
-                ProgressView("Scanning launch agents and daemons…")
+                ProgressView(Localization.shared.t(.loginItemsScanning))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if appState.loginItems.isEmpty {
                 emptyState
@@ -58,36 +58,36 @@ struct LoginItemsList: View {
         .onAppear {
             if appState.loginItems.isEmpty { appState.loadLoginItems() }
         }
-        .alert("Login item action failed",
+        .alert(Localization.shared.t(.loginItemsActionFailed),
                isPresented: Binding(
                    get: { appState.loginItemError != nil },
                    set: { if !$0 { appState.loginItemError = nil } }
                )) {
-            Button("Open System Settings") {
+            Button(Localization.shared.t(.loginItemsOpenSystemSettings)) {
                 openSystemSettingsLoginItems()
                 appState.loginItemError = nil
             }
-            Button("OK", role: .cancel) { appState.loginItemError = nil }
+            Button(Localization.shared.t(.commonOK), role: .cancel) { appState.loginItemError = nil }
         } message: {
-            Text((appState.loginItemError ?? "") + "\n\nMany modern login items are registered via SMAppService and can only be toggled by their parent app or in System Settings → General → Login Items.")
+            Text((appState.loginItemError ?? "") + Localization.shared.t(.loginItemsErrorSuffix))
         }
         .alert(
-            "Delete \(pendingDelete?.label ?? "")?",
+            Localization.shared.t(.loginItemsDeleteTitleFormat, pendingDelete?.label ?? ""),
             isPresented: Binding(
                 get: { pendingDelete != nil },
                 set: { if !$0 { pendingDelete = nil } }
             ),
             presenting: pendingDelete
         ) { item in
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) { appState.deleteLoginItem(item) }
+            Button(Localization.shared.t(.commonCancel), role: .cancel) {}
+            Button(Localization.shared.t(.commonDelete), role: .destructive) { appState.deleteLoginItem(item) }
         } message: { item in
             if item.isEmbedded {
-                Text("Bundled inside \(item.appDisplayName ?? "parent app"). The plist file stays on disk (deleting it would corrupt the app), but the helper will be unloaded and prevented from launching again.")
+                Text(Localization.shared.t(.loginItemsBundledInside, item.appDisplayName ?? "parent app"))
             } else if item.scope.requiresAdmin {
-                Text("This will unload and delete \(item.plistURL.path). Requires admin password.")
+                Text(Localization.shared.t(.loginItemsAdminWarning, item.plistURL.path))
             } else {
-                Text("This will unload and delete \(item.plistURL.path).")
+                Text(Localization.shared.t(.loginItemsDeleteWarning, item.plistURL.path))
             }
         }
     }
@@ -97,7 +97,7 @@ struct LoginItemsList: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField("Search login items", text: $search)
+                TextField(Localization.shared.t(.commonSearchAppsLogin), text: $search)
                     .textFieldStyle(.plain)
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
@@ -105,7 +105,7 @@ struct LoginItemsList: View {
 
             Spacer()
 
-            Text("\(appState.loginItems.count) items")
+            Text(Localization.shared.t(.loginItemsCountFormat, appState.loginItems.count))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
@@ -114,11 +114,11 @@ struct LoginItemsList: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "gear")
-                    Text("System Settings")
+                    Text(Localization.shared.t(.loginItemsSystemSettings))
                 }
             }
             .buttonStyle(.soft)
-            .help("macOS restricts toggling some login items registered via SMAppService. Use System Settings to change them.")
+            .help(Localization.shared.t(.loginItemsHelpSMAppService))
 
             Button { appState.loadLoginItems() } label: {
                 Image(systemName: "arrow.clockwise")
@@ -160,7 +160,7 @@ struct LoginItemsList: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .frame(width: 22)
-                    Text(group.title)
+                    Text(Localization.shared.t(group.titleKey))
                         .font(.system(size: 13, weight: .semibold))
                     Text(items.count == 1 ? "1 item" : "\(items.count) items")
                         .font(.system(size: 11))
@@ -204,7 +204,7 @@ struct LoginItemsList: View {
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
-                Text("\(item.scope.label)\(item.isEmbedded ? " · Bundled" : "") · \(item.plistURL.lastPathComponent)")
+                Text("\(Localization.shared.t(item.scope.labelKey))\(item.isEmbedded ? Localization.shared.t(.loginItemBundledChunk) : "") · \(item.plistURL.lastPathComponent)")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
@@ -231,7 +231,7 @@ struct LoginItemsList: View {
                 Image(systemName: "folder")
             }
             .buttonStyle(.borderless)
-            .help("Reveal plist in Finder")
+            .help(Localization.shared.t(.helpRevealPlist))
 
             Button { pendingDelete = item } label: {
                 Image(systemName: "trash")
@@ -239,8 +239,8 @@ struct LoginItemsList: View {
             }
             .buttonStyle(.borderless)
             .help(item.isEmbedded
-                  ? "Bundled inside parent app — disables the helper without deleting the bundle."
-                  : "Delete this login item")
+                  ? Localization.shared.t(.loginItemsTooltipBundled)
+                  : Localization.shared.t(.loginItemsTooltipDelete))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -268,9 +268,9 @@ struct LoginItemsList: View {
             Image(systemName: "play.slash")
                 .font(.system(size: 36))
                 .gradientText(Theme.sectionGradient(for: .applications))
-            Text("No login items")
+            Text(Localization.shared.t(.loginItemsNone))
                 .font(.system(size: 15, weight: .semibold))
-            Button("Scan") { appState.loadLoginItems() }
+            Button(Localization.shared.t(.commonScan)) { appState.loadLoginItems() }
                 .buttonStyle(.soft)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

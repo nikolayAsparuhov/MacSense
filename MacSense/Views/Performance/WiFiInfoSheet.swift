@@ -21,18 +21,19 @@ struct WiFiInfoSheet: View {
 
                         // Signal section — Wi-Fi only.
                         if info.isWiFi {
+                            let loc = Localization.shared
                             section(rows: [
-                                ("RSSI",     info.rssi.map { "\($0) dBm" } ?? "—"),
-                                ("Noise",    info.noise.map { "\($0) dBm" } ?? "—"),
-                                ("TX Rate",  info.txRateMbps.map { String(format: "%.1f Mbps", $0) } ?? "—"),
-                                ("Channel",  info.channel.map { "\($0)" } ?? "—"),
-                                ("Band",     info.band ?? "—"),
-                                ("Width",    info.width ?? "—"),
+                                (loc.t(.wifiRSSILabel),    info.rssi.map { "\($0) dBm" } ?? "—"),
+                                (loc.t(.wifiNoiseLabel),   info.noise.map { "\($0) dBm" } ?? "—"),
+                                (loc.t(.wifiTXRate),       info.txRateMbps.map { String(format: "%.1f Mbps", $0) } ?? "—"),
+                                (loc.t(.wifiChannelLabel), info.channel.map { "\($0)" } ?? "—"),
+                                (loc.t(.wifiBandLabel),    info.band ?? "—"),
+                                (loc.t(.wifiWidthLabel),   info.width ?? "—"),
                             ])
                         }
 
                         if info.isWiFi, info.ssid == nil {
-                            Text("SSID and BSSID may require Location Services for the app. Grant access in System Settings → Privacy & Security → Location Services to see them.")
+                            Text(Localization.shared.t(.wifiLocationHint))
                                 .font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 4)
@@ -40,14 +41,14 @@ struct WiFiInfoSheet: View {
                     } else if isLoading {
                         HStack(spacing: 8) {
                             ProgressView().controlSize(.small)
-                            Text("Reading Wi-Fi state…")
+                            Text(Localization.shared.t(.wifiReading))
                                 .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.top, 40)
                     } else {
-                        Text("No Wi-Fi interface detected.")
+                        Text(Localization.shared.t(.wifiNoInterface))
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
@@ -77,7 +78,7 @@ struct WiFiInfoSheet: View {
                 .foregroundStyle(Theme.Palette.sky)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Network info")
+                Text(Localization.shared.t(.perfNetworkInfo))
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                 if let ssid = info?.ssid {
                     Text(ssid)
@@ -85,7 +86,8 @@ struct WiFiInfoSheet: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 } else if let iface = info?.interfaceName {
-                    Text("\(info?.connection.label ?? "") · \(iface)")
+                    let connLabel = info.map { Localization.shared.t($0.connection.labelKey) } ?? ""
+                    Text("\(connLabel) · \(iface)")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -93,15 +95,6 @@ struct WiFiInfoSheet: View {
             }
 
             Spacer()
-
-            Button {
-                Task { await load() }
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 13))
-            }
-            .buttonStyle(.soft)
-            .help("Refresh")
 
             Button { dismiss() } label: {
                 Image(systemName: "xmark.circle.fill")
@@ -147,31 +140,33 @@ struct WiFiInfoSheet: View {
     }
 
     private func connectionRows(for info: WiFiInfo) -> [(String, String)] {
+        let loc = Localization.shared
         var rows: [(String, String)] = [
-            ("Connection", info.connection.label),
-            ("Interface",  info.interfaceName ?? "—"),
+            (loc.t(.wifiConnLabel),      loc.t(info.connection.labelKey)),
+            (loc.t(.wifiInterfaceLabel), info.interfaceName ?? "—"),
         ]
         if info.connection == .ethernet, let media = info.linkMedia {
-            rows.append(("Link Speed", media))
+            rows.append((loc.t(.wifiLinkSpeed), media))
         }
         if info.isWiFi {
-            rows.append(("Security",       info.security ?? "—"))
-            rows.append(("Wi-Fi Protocol", info.wifiProtocol ?? "—"))
+            rows.append((loc.t(.wifiSecurityLabel), info.security ?? "—"))
+            rows.append((loc.t(.wifiProtocolLabel), info.wifiProtocol ?? "—"))
         }
         return rows
     }
 
     private func networkRows(for info: WiFiInfo) -> [(String, String)] {
+        let loc = Localization.shared
         var rows: [(String, String)] = [
-            ("Local IP",   info.localIP ?? "—"),
-            ("Gateway IP", info.gatewayIP ?? "—"),
-            ("Public IP",  info.publicIP ?? "—"),
-            ("MAC",        info.macAddress ?? "—"),
+            (loc.t(.wifiLocalIP),       info.localIP ?? "—"),
+            (loc.t(.wifiGatewayIP),     info.gatewayIP ?? "—"),
+            (loc.t(.wifiPublicIPLabel), info.publicIP ?? "—"),
+            (loc.t(.wifiMACLabel),      info.macAddress ?? "—"),
         ]
         if info.isWiFi {
-            rows.append(("BSSID", info.bssid ?? "—"))
+            rows.append((loc.t(.wifiBSSIDLabel), info.bssid ?? "—"))
         }
-        rows.append(("DNS", info.dnsServers.isEmpty ? "—" : info.dnsServers.joined(separator: ", ")))
+        rows.append((loc.t(.wifiDNSLabel), info.dnsServers.isEmpty ? "—" : info.dnsServers.joined(separator: ", ")))
         return rows
     }
 

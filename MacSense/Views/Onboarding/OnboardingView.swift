@@ -46,7 +46,7 @@ struct OnboardingView: View {
                 HStack(spacing: 14) {
                     Spacer()
                     if phase == .request {
-                        Button("Skip for Now") {
+                        Button(Localization.shared.t(.commonSkipForNow)) {
                             finish()
                         }
                         .buttonStyle(.plain)
@@ -62,7 +62,7 @@ struct OnboardingView: View {
                             finish()
                         }
                     } label: {
-                        Text(phase == .request ? "Grant Full Disk Access" : "Begin")
+                        Text(phase == .request ? Localization.shared.t(.onboardingGrantButton) : Localization.shared.t(.onboardingBeginButton))
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                             .padding(.vertical, 14)
@@ -89,10 +89,10 @@ struct OnboardingView: View {
     private var leftIllustration: some View {
         ZStack {
             VStack(alignment: .leading, spacing: 14) {
-                pill("Get full protection")
+                pill(Localization.shared.t(.onboardingPillProtection))
                 HStack(spacing: 14) {
-                    pill("Find 27.5% more junk")
-                    pill("Manage all your files")
+                    pill(Localization.shared.t(.onboardingPillFindMoreJunk))
+                    pill(Localization.shared.t(.onboardingPillManage))
                 }
                 Spacer().frame(height: 30)
                 driveIllustration
@@ -201,11 +201,11 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 18) {
             Group {
                 if phase == .request {
-                    Text("Grant Full Disk\nAccess")
+                    Text(Localization.shared.t(.onboardingGrantFDA))
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                 } else {
-                    Text("Full Disk Access\nGranted!")
+                    Text(Localization.shared.t(.onboardingGrantedFDA))
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                 }
@@ -213,8 +213,8 @@ struct OnboardingView: View {
             .transition(.opacity)
 
             Text(phase == .request
-                 ? "Allow MacSense to find and remove hidden system junk, duplicates, and large unused files. This will ensure a deeper cleanup and better Mac performance."
-                 : "Enjoy MacSense's full potential with deeper cleaning, better Mac performance, and more control over your storage!")
+                 ? Localization.shared.t(.onboardingRequestBody)
+                 : Localization.shared.t(.onboardingGrantedBody))
                 .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(.white.opacity(0.65))
                 .lineSpacing(4)

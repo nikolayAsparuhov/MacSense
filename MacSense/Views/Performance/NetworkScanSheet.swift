@@ -37,21 +37,16 @@ struct NetworkScanSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Network devices")
+                Text(Localization.shared.t(.networkDevicesTitle))
                     .font(.system(size: 17, weight: .bold, design: .rounded))
                 Text(isScanning
-                     ? "Scanning local subnet…"
-                     : "\(max(devices.count - 1, 0)) device\(devices.count - 1 == 1 ? "" : "s") found nearby")
+                     ? Localization.shared.t(.networkScanningSubtitle)
+                     : Localization.shared.t(.networkFoundDevices, max(devices.count - 1, 0), devices.count - 1 == 1 ? "" : "s"))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
-
-            if isScanning {
-                ProgressView().controlSize(.small)
-                    .tint(Theme.Palette.sky)
-            }
 
             Button { dismiss() } label: {
                 Image(systemName: "xmark.circle.fill")
@@ -69,16 +64,6 @@ struct NetworkScanSheet: View {
             LazyVStack(spacing: 6) {
                 ForEach(devices) { device in
                     row(device)
-                }
-                if isScanning && devices.count <= 1 {
-                    HStack(spacing: 8) {
-                        ProgressView().controlSize(.small)
-                        Text("Pinging neighbors…")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: .infinity)
                 }
             }
             .padding(.horizontal, 16)
@@ -107,7 +92,7 @@ struct NetworkScanSheet: View {
                         .truncationMode(.middle)
                         .textSelection(.enabled)
                     if device.isCurrentDevice {
-                        Text("This Mac")
+                        Text(Localization.shared.t(.networkThisMac))
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(Theme.Palette.sky)
                             .padding(.horizontal, 6).padding(.vertical, 2)
@@ -129,23 +114,23 @@ struct NetworkScanSheet: View {
                 .textSelection(.enabled)
         }
         .contextMenu {
-            Button("Copy IP") {
+            Button(Localization.shared.t(.networkCopyIP)) {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(device.ipAddress, forType: .string)
             }
             if let mac = device.macAddress, !mac.isEmpty {
-                Button("Copy MAC") {
+                Button(Localization.shared.t(.networkCopyMAC)) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(mac, forType: .string)
                 }
             }
             if let host = device.hostname {
-                Button("Copy Hostname") {
+                Button(Localization.shared.t(.networkCopyHostname)) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(host, forType: .string)
                 }
             }
-            Button("Copy Row") {
+            Button(Localization.shared.t(.networkCopyRow)) {
                 NSPasteboard.general.clearContents()
                 let row = "\(device.displayName)\t\(device.ipAddress)\t\(device.macAddress ?? "")"
                 NSPasteboard.general.setString(row, forType: .string)
@@ -180,8 +165,14 @@ struct NetworkScanSheet: View {
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: isScanning ? "stop.circle" : "arrow.clockwise")
-                    Text(isScanning ? "Stop" : "Re-scan")
+                    if isScanning {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(Theme.Palette.sky)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    Text(isScanning ? Localization.shared.t(.commonStop) : Localization.shared.t(.commonRescan))
                 }
                 .font(.system(size: 12, weight: .semibold))
                 .padding(.horizontal, 14).padding(.vertical, 7)

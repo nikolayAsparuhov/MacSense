@@ -10,11 +10,11 @@ enum LoginItemScope: String, Codable {
 
     var requiresAdmin: Bool { self != .userAgent }
 
-    var label: String {
+    var labelKey: LocalizationKey {
         switch self {
-        case .userAgent: return "User"
-        case .systemAgent: return "System (Agent)"
-        case .systemDaemon: return "System (Daemon)"
+        case .userAgent: return .loginItemScopeUser
+        case .systemAgent: return .loginItemScopeSystemAgent
+        case .systemDaemon: return .loginItemScopeSystemDaemon
         }
     }
 

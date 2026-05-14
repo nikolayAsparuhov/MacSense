@@ -32,14 +32,15 @@ final class AppState: ObservableObject {
     private func releaseSectionMemory(leaving section: AppSection) {
         switch section {
         case .storage:
-            // Drop the bulky tree but keep the lightweight summary
-            // (`storageReport`), the user's explicit-scan flag, and
-            // the cached snapshot. Re-entry rehydrates the graph from
-            // the snapshot — see `hydrateSectionMemory(entering:)`.
-            // Keeping these means the user sees their scan results
-            // immediately on every return within the session, instead
-            // of being bounced back to the hero.
+            // Drop the bulky tree AND the in-memory snapshot copy.
+            // The snapshot still lives on disk, so re-entry hydrates
+            // from `StorageSnapshotStore.load()` async — keeps idle
+            // RAM bounded even after a deep scan. The lightweight
+            // summary (`storageReport`) and explicit-scan flag stay
+            // so the section header still renders without bouncing
+            // the user back to the hero.
             storageGraph = nil
+            cachedSnapshot = nil
             sizeNavStack = []
             sizeNavSelection.removeAll()
             trashedSizeNodeIDs.removeAll()
@@ -152,6 +153,22 @@ final class AppState: ObservableObject {
     /// shown by `LoginItemsList`. Cleared by the user dismissing.
     @Published var loginItemError: String? = nil
 
+    // Full Disk Access prompt. Surfaced by scan entry points when the
+    // probe in `FullDiskAccessManager` reports the permission is
+    // missing, so the user gets a clear nudge instead of silently
+    // partial scan results.
+    @Published var showFDAPrompt: Bool = false
+
+    /// Re-check FDA before kicking off a scan. Returns true when the
+    /// permission is granted; otherwise raises the modal prompt and
+    /// returns false so the caller can abort.
+    @discardableResult
+    func ensureFullDiskAccess() -> Bool {
+        if FullDiskAccessManager.shared.hasFullDiskAccess { return true }
+        showFDAPrompt = true
+        return false
+    }
+
     // Storage
     @Published var storageReport: StorageReport? = nil
     @Published var isScanningStorage: Bool = false
@@ -193,6 +210,11 @@ final class AppState: ObservableObject {
     /// `appState.help.open(at: "purgeable-space")` to surface the
     /// drawer scrolled to the relevant entry.
     let help = HelpController()
+
+    /// Live localization service. Views read `appState.loc.t(.key)`
+    /// from `body`; switching `loc.locale` flips every `t(...)`
+    /// lookup and SwiftUI re-renders the affected subtree.
+    let loc = Localization.shared
 
     /// Cached snapshot from a prior scan, loaded silently on launch.
     /// Held privately so the sidebar dot and Storage page hero don't
@@ -303,6 +325,7 @@ final class AppState: ObservableObject {
 
     func runSmartScan() {
         guard !isSmartScanRunning else { return }
+        guard ensureFullDiskAccess() else { return }
         isSmartScanRunning = true
         smartScanProgress = 0
         for cat in CleaningCategory.allCases { categoryStates[cat] = .scanning }
@@ -363,6 +386,7 @@ final class AppState: ObservableObject {
 
     func scanCategory(_ category: CleaningCategory) {
         if case .scanning = categoryStates[category] { return }
+        guard ensureFullDiskAccess() else { return }
         categoryStates[category] = .scanning
         Task {
             let result = await scanEngine.scanCategory(category)
@@ -415,6 +439,7 @@ final class AppState: ObservableObject {
     /// bundle-size sort order while sizes stream in (no shuffle), and
     /// re-sorts once after every app is fully sized.
     func loadInstalledApps() {
+        guard ensureFullDiskAccess() else { return }
         isLoadingApps = true
         appsSizingComplete = false
         installedApps = []
@@ -502,6 +527,7 @@ final class AppState: ObservableObject {
     /// instantly and stays interactive (close button, scrolling) while
     /// sizes stream in.
     func scanForAppFiles(_ app: InstalledApp) {
+        guard ensureFullDiskAccess() else { return }
         discoveredFiles = []
         selectedFiles = []
         appFileSizes = [:]
@@ -589,7 +615,7 @@ final class AppState: ObservableObject {
         }
         guard !urls.isEmpty else {
             if !blocked.isEmpty {
-                removalError = "Refused to delete \(blocked.count) protected items."
+                removalError = Localization.shared.t(.removalRefusedFormat, blocked.count)
             }
             return
         }
@@ -626,13 +652,13 @@ final class AppState: ObservableObject {
                 }
                 if !permFails.isEmpty {
                     let n = permFails.count
-                    self.removalError = "\(n) file\(n == 1 ? "" : "s") not removed. Authorization cancelled or denied."
+                    self.removalError = Localization.shared.t(.removalAuthCancelledFormat, n)
                 } else if !otherFails.isEmpty {
                     let n = otherFails.count
                     let detail = otherFails.prefix(3)
                         .map { "\($0.0.lastPathComponent): \($0.1.localizedDescription)" }
                         .joined(separator: "; ")
-                    self.removalError = "\(n) file\(n == 1 ? "" : "s") could not be removed. \(detail)"
+                    self.removalError = Localization.shared.t(.removalNotRemovedFormat, n, detail)
                 }
                 if let selected = self.selectedApp {
                     let appGone = !FileManager.default.fileExists(atPath: selected.path.path)
@@ -742,6 +768,7 @@ final class AppState: ObservableObject {
     // MARK: - Login Items
 
     func loadLoginItems() {
+        guard ensureFullDiskAccess() else { return }
         isLoadingLoginItems = true
         Task.detached(priority: .userInitiated) { [weak self] in
             let items = LoginItemScanner.shared.scan()
@@ -783,9 +810,10 @@ final class AppState: ObservableObject {
                         isEnabled: !enable, plistSize: item.plistSize, programSize: item.programSize,
                         lastModified: item.lastModified, runAtLoad: item.runAtLoad, keepAlive: item.keepAlive
                     )
-                    let action = enable ? "enable" : "disable"
-                    let admin = item.scope.requiresAdmin ? " Requires admin password — try again and authenticate." : ""
-                    self.loginItemError = "Couldn't \(action) \(item.appDisplayName ?? item.label).\(admin)"
+                    let loc = Localization.shared
+                    let action = loc.t(enable ? .loginItemEnableAction : .loginItemDisableAction)
+                    let admin = item.scope.requiresAdmin ? loc.t(.loginItemAdminSuffix) : ""
+                    self.loginItemError = loc.t(.loginItemActionFailedFormat, action, item.appDisplayName ?? item.label, admin)
                 }
             }
         }
@@ -804,6 +832,7 @@ final class AppState: ObservableObject {
 
     func scanStorage() {
         guard !isScanningStorage else { return }
+        guard ensureFullDiskAccess() else { return }
         let callers = Thread.callStackSymbols.dropFirst().prefix(4).joined(separator: " <- ")
         Logger.shared.log("scanStorage triggered by: \(callers)", level: .info)
         userRequestedStorageScan = true
@@ -1110,7 +1139,7 @@ final class AppState: ObservableObject {
             if outcome.errors.isEmpty {
                 categoryStates[category] = .cleaned(freed: outcome.freedSpace)
             } else {
-                let summary = outcome.errors.first ?? "Some items could not be cleaned."
+                let summary = outcome.errors.first ?? Localization.shared.t(.cleanupSomeItemsFailed)
                 categoryStates[category] = .cleanedWithErrors(
                     freed: outcome.freedSpace,
                     message: summary

@@ -52,6 +52,17 @@ struct MacSenseApp: App {
             }
             .preferredColorScheme(.dark)
             .animation(.easeInOut(duration: 0.35), value: onboardingComplete)
+            .alert(
+                Localization.shared.t(.fdaPromptTitle),
+                isPresented: $appState.showFDAPrompt
+            ) {
+                Button(Localization.shared.t(.fdaPromptOpenSettings)) {
+                    FullDiskAccessManager.shared.openFullDiskAccessSettings()
+                }
+                Button(Localization.shared.t(.fdaPromptLater), role: .cancel) {}
+            } message: {
+                Text(Localization.shared.t(.fdaPromptBody))
+            }
             .task {
                 appDelegate.appState = appState
                 NotificationDelegate.onCleanupTap = { [weak appState] in

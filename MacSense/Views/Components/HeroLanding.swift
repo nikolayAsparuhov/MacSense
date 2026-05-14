@@ -63,7 +63,7 @@ struct HeroLanding<Hero: View>: View {
 
             ZStack {
                 if isScanning {
-                    ScanLoader(
+                    HeroCompactLoader(
                         label: scanLabel,
                         gradient: ctaGradient,
                         glow: ctaGlow,
@@ -82,9 +82,62 @@ struct HeroLanding<Hero: View>: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
             }
+            // Pin the slot to the CTA's natural size so the loader
+            // can't push the layout upward when scanning starts.
+            .frame(height: 110)
             .animation(.spring(response: 0.35, dampingFraction: 0.78), value: isScanning)
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Compact CTA-replacement loader sized to match `BigCircularCTA`'s
+/// 110pt footprint so the hero layout doesn't reflow when a scan
+/// starts. Single ring + label below — no large halo.
+private struct HeroCompactLoader: View {
+    let label: String
+    let gradient: LinearGradient
+    let glow: Color
+    var progress: Double? = nil
+
+    @State private var rotate = false
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(0.10), lineWidth: 4)
+                    .frame(width: 70, height: 70)
+
+                if let p = progress {
+                    Circle()
+                        .trim(from: 0.0, to: max(0.02, min(1.0, p)))
+                        .stroke(gradient, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .frame(width: 70, height: 70)
+                        .rotationEffect(.degrees(-90))
+                        .animation(.easeInOut(duration: 0.25), value: p)
+                } else {
+                    Circle()
+                        .trim(from: 0.0, to: 0.28)
+                        .stroke(gradient, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .frame(width: 70, height: 70)
+                        .rotationEffect(.degrees(rotate ? 360 : 0))
+                }
+            }
+            .shadow(color: glow.opacity(0.55), radius: 14, y: 4)
+
+            Text(label)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+                .lineLimit(1)
+        }
+        .frame(height: 110)
+        .onAppear {
+            withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                rotate = true
+            }
+        }
     }
 }

@@ -110,30 +110,31 @@ private struct TypeCard: View {
     let onDetails: () -> Void
 
     @State private var isHovering = false
+    @ObservedObject private var loc = Localization.shared
 
     var body: some View {
-        Button {
+        // `onTapGesture` instead of an outer Button so the embedded
+        // HelpIcon can capture its own taps without SwiftUI's nested
+        // hit-testing forwarding them to the parent.
+        GlossyCard(accent: LinearGradient(colors: [type.color, type.color.opacity(0.55)],
+                                          startPoint: .topLeading, endPoint: .bottomTrailing)) {
+            VStack(alignment: .leading, spacing: 12) {
+                header
+                Divider().opacity(0.25)
+                topFiles
+                footer
+            }
+        }
+        .scaleEffect(isHovering ? 1.015 : 1.0)
+        .shadow(color: type.color.opacity(isHovering ? 0.35 : 0), radius: 18, y: 6)
+        .animation(.easeOut(duration: 0.18), value: isHovering)
+        .contentShape(Rectangle())
+        .onTapGesture {
             guard !files.isEmpty else { return }
             onDetails()
-        } label: {
-            GlossyCard(accent: LinearGradient(colors: [type.color, type.color.opacity(0.55)],
-                                              startPoint: .topLeading, endPoint: .bottomTrailing)) {
-                VStack(alignment: .leading, spacing: 12) {
-                    header
-                    Divider().opacity(0.25)
-                    topFiles
-                    footer
-                }
-            }
-            .scaleEffect(isHovering ? 1.015 : 1.0)
-            .shadow(color: type.color.opacity(isHovering ? 0.35 : 0), radius: 18, y: 6)
-            .animation(.easeOut(duration: 0.18), value: isHovering)
         }
-        .buttonStyle(.plain)
-        .noFocusRing()
-        .disabled(files.isEmpty)
         .onHover { isHovering = $0 }
-        .help(files.isEmpty ? "" : "Open \(type.label) details")
+        .help(files.isEmpty ? "" : Localization.shared.t(.storageOpenDetailsFormat, Localization.shared.t(type.labelKey)))
     }
 
     private var header: some View {
@@ -148,9 +149,12 @@ private struct TypeCard: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(type.label)
-                    .font(.system(size: 16, weight: .semibold))
-                Text("\(breakdown?.fileCount ?? 0) files")
+                HStack(spacing: 6) {
+                    Text(loc.t(type.labelKey))
+                        .font(.system(size: 16, weight: .semibold))
+                    HelpIcon(entryID: type.helpEntryID)
+                }
+                Text(loc.t(.mediaFilesCount, breakdown?.fileCount ?? 0))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -169,7 +173,7 @@ private struct TypeCard: View {
     private var topFiles: some View {
         VStack(spacing: 4) {
             if files.isEmpty {
-                Text("No files indexed yet")
+                Text(loc.t(.mediaTypeNoFiles))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -200,7 +204,7 @@ private struct TypeCard: View {
     private var footer: some View {
         if files.count > 5 {
             HStack {
-                Text("\(files.count - 5) more…")
+                Text(Localization.shared.t(.typeTabMoreFormat, files.count - 5))
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
                 Spacer()

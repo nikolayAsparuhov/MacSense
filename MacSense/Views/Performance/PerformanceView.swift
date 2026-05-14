@@ -59,7 +59,7 @@ struct PerformanceView: View {
         .alert(item: $activeAlert) { alert in
             switch alert {
             case .dns(let msg):
-                return Alert(title: Text("DNS Cache"), message: Text(msg), dismissButton: .default(Text("OK")))
+                return Alert(title: Text(Localization.shared.t(.perfDNSCache)), message: Text(msg), dismissButton: .default(Text(Localization.shared.t(.commonOK))))
             }
         }
     }
@@ -73,7 +73,7 @@ struct PerformanceView: View {
                 HStack {
                     Image(systemName: "cpu").font(.system(size: 18, weight: .medium))
                         .foregroundStyle(tint)
-                    Text("CPU").font(.system(size: 14, weight: .semibold))
+                    Text(Localization.shared.t(.perfCPU)).font(.system(size: 14, weight: .semibold))
                     Spacer()
                     livePill
                 }
@@ -88,7 +88,7 @@ struct PerformanceView: View {
                     showProcessList = true
                 } label: {
                     HStack(spacing: 4) {
-                        Text("\(monitor.sample.processCount) processes running")
+                        Text(Localization.shared.t(.perfProcessesRunningFormat, monitor.sample.processCount))
                             .font(.system(size: 11, weight: .semibold))
                         Image(systemName: "chevron.right")
                             .font(.system(size: 9, weight: .bold))
@@ -100,7 +100,7 @@ struct PerformanceView: View {
                 }
                 .buttonStyle(.plain)
                 .noFocusRing()
-                .help("Show running processes")
+                .help(Localization.shared.t(.helpShowProcesses))
 
                 ProgressView(value: max(0, min(1, monitor.sample.cpuUsage))).tint(tint).padding(.top, 2)
                     .animation(AppAnimation.value, value: monitor.sample.cpuUsage)
@@ -119,7 +119,7 @@ struct PerformanceView: View {
         let pct = monitor.sample.memoryPercent
         let summary = "\(byteString(free)) (\(percentString(pct))) out of \(byteString(total))"
         return usageTile(
-            title: "Memory", icon: "memorychip",
+            title: Localization.shared.t(.perfMemory), icon: "memorychip",
             usedBytes: used,
             percent: pct,
             tint: tintColor,
@@ -136,7 +136,7 @@ struct PerformanceView: View {
         let pct = monitor.sample.diskPercent
         let summary = "\(byteString(free)) (\(percentString(pct))) out of \(byteString(total))"
         return usageTile(
-            title: "Disk", icon: "externaldrive",
+            title: Localization.shared.t(.perfDisk), icon: "externaldrive",
             usedBytes: used,
             percent: pct,
             tint: tintColor,
@@ -150,7 +150,7 @@ struct PerformanceView: View {
     private var diskRatesLine: some View {
         HStack(alignment: .firstTextBaseline, spacing: 18) {
             HStack(spacing: 4) {
-                Text("Read")
+                Text(Localization.shared.t(.perfRead))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
                 RollingRate(
@@ -161,7 +161,7 @@ struct PerformanceView: View {
                 .animation(AppAnimation.value, value: monitor.sample.diskReadPerSec)
             }
             HStack(spacing: 4) {
-                Text("Write")
+                Text(Localization.shared.t(.perfWrite))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
                 RollingRate(
@@ -200,7 +200,7 @@ struct PerformanceView: View {
                         foreground: AnyShapeStyle(tint)
                     )
                     .animation(AppAnimation.value, value: usedBytes)
-                    Text("\(percentString(percent)) used")
+                    Text(Localization.shared.t(.perfPercentUsedFormat, percentString(percent)))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                         .contentTransition(.numericText())
@@ -237,14 +237,14 @@ struct PerformanceView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "network").font(.system(size: 18, weight: .medium))
                         .foregroundStyle(Theme.Palette.sky)
-                    Text("Network").font(.system(size: 14, weight: .semibold))
+                    Text(Localization.shared.t(.perfNetwork)).font(.system(size: 14, weight: .semibold))
                     Spacer()
                     Button {
                         showWiFiInfo = true
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle")
-                            Text("Network info")
+                            Text(Localization.shared.t(.perfNetworkInfo))
                         }
                         .font(.system(size: 11, weight: .semibold))
                         .padding(.horizontal, 9).padding(.vertical, 4)
@@ -254,7 +254,7 @@ struct PerformanceView: View {
                     }
                     .buttonStyle(.plain)
                     .noFocusRing()
-                    .help("Open network details")
+                    .help(Localization.shared.t(.helpOpenNetwork))
                     livePill
                 }
 
@@ -269,7 +269,7 @@ struct PerformanceView: View {
                 // Secondary: public IP + MAC address.
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
-                        Text("Public")
+                        Text(Localization.shared.t(.perfPublic))
                             .foregroundStyle(.secondary)
                             .frame(width: 44, alignment: .leading)
                         if let publicIP = appState.publicIP {
@@ -285,7 +285,7 @@ struct PerformanceView: View {
                     }
                     if let mac = local.macAddress, !mac.isEmpty {
                         HStack(spacing: 6) {
-                            Text("MAC")
+                            Text(Localization.shared.t(.perfMAC))
                                 .foregroundStyle(.secondary)
                                 .frame(width: 44, alignment: .leading)
                             Text(mac.uppercased())
@@ -306,7 +306,7 @@ struct PerformanceView: View {
 
                 HStack(spacing: 8) {
                     tileActionButton(
-                        title: "Scan",
+                        title: Localization.shared.t(.perfScanButton),
                         icon: "wifi.router",
                         disabled: false,
                         tint: Theme.Palette.sky,
@@ -316,7 +316,7 @@ struct PerformanceView: View {
                     }
 
                     tileActionButton(
-                        title: dnsFlushBusy ? "Flushing…" : "Flush DNS",
+                        title: dnsFlushBusy ? Localization.shared.t(.perfFlushing) : Localization.shared.t(.perfFlushDNS),
                         icon: "arrow.clockwise.circle",
                         disabled: dnsFlushBusy,
                         tint: Theme.Palette.sky,
@@ -326,7 +326,7 @@ struct PerformanceView: View {
                             dnsFlushBusy = true
                             let ok = await appState.flushDNSCache()
                             dnsFlushBusy = false
-                            activeAlert = .dns(ok ? "DNS cache flushed." : "DNS flush cancelled or failed.")
+                            activeAlert = .dns(ok ? Localization.shared.t(.perfDNSFlushSuccess) : Localization.shared.t(.perfDNSFlushFailed))
                         }
                     }
                 }
@@ -378,21 +378,21 @@ struct PerformanceView: View {
         if let level = monitor.sample.batteryLevel {
             let tintColor: Color = level < 0.2 ? Theme.Palette.coral : Theme.Palette.mint
             let timeChunk = batteryTimeLabel()
-            let cycleChunk = monitor.sample.batteryCycleCount.map { "\($0) cycles" }
+            let cycleChunk = monitor.sample.batteryCycleCount.map { Localization.shared.t(.perfBatteryCyclesFormat, $0) }
             let labelParts = [timeChunk, monitor.sample.batteryHealth.label, cycleChunk]
                 .compactMap { $0 }
                 .filter { !$0.isEmpty }
             return AnyView(
                 gaugeShell(
-                    title: "Battery", icon: batteryIcon(level),
+                    title: Localization.shared.t(.perfBattery), icon: batteryIcon(level),
                     label: labelParts.joined(separator: " · "),
                     progress: level, tint: tintColor,
                     bottomAction: {
                         AnyView(
-                            tileActionButton(title: "Battery Safe Mode", icon: "leaf", disabled: false, tint: tintColor) {
+                            tileActionButton(title: Localization.shared.t(.performanceLowPowerMode), icon: "leaf", disabled: false, tint: tintColor) {
                                 openBatterySettings()
                             }
-                            .help("Opens System Settings → Battery, where Low Power Mode extends battery life by reducing CPU speed, dimming the display, and pausing background work.")
+                            .help(Localization.shared.t(.helpLowPowerHint))
                         )
                     }
                 ) {
@@ -406,8 +406,8 @@ struct PerformanceView: View {
             )
         }
         return AnyView(infoTile(
-            title: "Battery", icon: "powerplug", primary: "—",
-            secondary: "Desktop or no battery detected", tint: .secondary
+            title: Localization.shared.t(.perfBattery), icon: "powerplug", primary: "—",
+            secondary: Localization.shared.t(.perfNoBattery), tint: .secondary
         ))
     }
 
@@ -423,7 +423,7 @@ struct PerformanceView: View {
                     Image(systemName: "thermometer.medium")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(tintColor)
-                    Text("Thermal").font(.system(size: 14, weight: .semibold))
+                    Text(Localization.shared.t(.perfThermal)).font(.system(size: 14, weight: .semibold))
                     Spacer()
                     livePill
                 }
@@ -434,7 +434,7 @@ struct PerformanceView: View {
                             .foregroundStyle(tintColor)
                             .contentTransition(.numericText())
                             .animation(AppAnimation.value, value: temp)
-                        Text("≈ approximate")
+                        Text(Localization.shared.t(.perfThermalApprox))
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.secondary)
                     } else {
@@ -443,7 +443,7 @@ struct PerformanceView: View {
                     }
                 }
                 HStack(spacing: 6) {
-                    Text(state.label)
+                    Text(state.labelKey.map { Localization.shared.t($0) } ?? "—")
                         .font(.system(size: 12, weight: .bold))
                         .padding(.horizontal, 8).padding(.vertical, 3)
                         .background(Capsule().fill(tintColor.opacity(0.20)))
@@ -484,7 +484,7 @@ struct PerformanceView: View {
     }
 
     private var livePill: some View {
-        Text("LIVE")
+        Text(Localization.shared.t(.performanceLive))
             .font(.system(size: 9, weight: .bold))
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(Capsule().fill(.green.opacity(0.18)))
@@ -577,14 +577,16 @@ struct PerformanceView: View {
     private func batteryTimeLabel() -> String? {
         guard let mins = monitor.sample.batteryTimeMinutes else {
             if monitor.sample.batteryOnAC && !monitor.sample.batteryIsCharging {
-                return "On AC"
+                return Localization.shared.t(.perfBatteryOnAC)
             }
             return nil
         }
         let h = mins / 60
         let m = mins % 60
         let stamp = h > 0 ? "\(h)h \(m)m" : "\(m)m"
-        return monitor.sample.batteryIsCharging ? "\(stamp) to full" : "\(stamp) left"
+        return monitor.sample.batteryIsCharging
+            ? Localization.shared.t(.perfBatteryToFullFormat, stamp)
+            : Localization.shared.t(.perfBatteryLeftFormat, stamp)
     }
 
     private func batteryIcon(_ level: Double) -> String {
@@ -616,10 +618,10 @@ struct PerformanceView: View {
 
     private func thermalHint(_ state: ProcessInfo.ThermalState) -> String {
         switch state {
-        case .nominal:  return "Operating normally."
-        case .fair:     return "Slight throttling possible."
-        case .serious:  return "Macs may throttle CPU/GPU."
-        case .critical: return "Heavy throttling — close apps."
+        case .nominal:  return Localization.shared.t(.thermalHintNominal)
+        case .fair:     return Localization.shared.t(.thermalHintFair)
+        case .serious:  return Localization.shared.t(.thermalHintSerious)
+        case .critical: return Localization.shared.t(.thermalHintCritical)
         @unknown default: return "—"
         }
     }

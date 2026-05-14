@@ -9,13 +9,23 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
-    var title: String {
+    /// Localization key for the section's sidebar title. Resolved
+    /// at the call site via `Localization.shared.t(...)` so the
+    /// model itself stays pure and synchronous.
+    var titleKey: LocalizationKey {
         switch self {
-        case .cleanup:      return "Cleanup"
-        case .performance:  return "Performance"
-        case .applications: return "Applications"
-        case .storage:      return "Storage"
+        case .cleanup:      return .navCleanup
+        case .performance:  return .navPerformance
+        case .applications: return .navApplications
+        case .storage:      return .navStorage
         }
+    }
+
+    /// Convenience that performs the lookup against the shared
+    /// localization instance. Stays main-actor-safe because every
+    /// SwiftUI view body is already on the main actor.
+    @MainActor var title: String {
+        Localization.shared.t(titleKey)
     }
 
     var iconName: String {

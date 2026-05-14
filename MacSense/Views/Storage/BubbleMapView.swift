@@ -21,7 +21,15 @@ struct BubbleMapView: View {
             let size = proxy.size
             let layout = BubbleLayout.pack(nodes: nodes, in: size)
             ZStack {
-                ForEach(Array(layout.enumerated()), id: \.element.node.id) { _, item in
+                // Identify rows by `path` rather than `node.id`. The
+                // synthetic "Other items" node is rebuilt by the parent
+                // every render — its auto-generated UUID changes each
+                // time, so an id-based ForEach tears the BubbleView
+                // down and back up between frames, dropping its
+                // `@State isHovering` and firing onContinuousHover
+                // `.ended` → `.active` loops (visible blink). Paths
+                // stay constant ("<other>") across renders.
+                ForEach(Array(layout.enumerated()), id: \.element.node.path) { _, item in
                     BubbleView(
                         node: item.node,
                         radius: item.radius,
@@ -92,7 +100,7 @@ private struct BubbleView: View {
             }
             .buttonStyle(.plain)
             .noFocusRing()
-            .help(isSelected ? "Deselect" : "Select for delete")
+            .help(isSelected ? Localization.shared.t(.bubbleMapDeselect) : Localization.shared.t(.bubbleMapSelectDelete))
             // Center sits ON the bubble's top edge so the disc
             // half-overlaps the stroke and reads as a carved notch.
             .position(x: radius, y: 0)
@@ -151,7 +159,7 @@ private struct BubbleView: View {
                         FolderIcon(path: node.path, name: node.name)
                             .frame(width: iconSide, height: iconSide)
                     }
-                    Text(node.name == "/" ? "Macintosh HD" : node.name)
+                    Text(node.name == "/" ? Localization.shared.t(.bubbleMapMacintoshHD) : node.name)
                         .font(.system(size: labelFont, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                         .lineLimit(1)
@@ -201,12 +209,40 @@ private struct BubbleView: View {
         .onContinuousHover { phase in
             switch phase {
             case .active(let location):
-                if !isHovering {
-                    isHovering = true
-                    hoverInfo = HoverInfo.load(for: node)
-                    onHoverChange(true)
+                // `onContinuousHover` fires across the bubble's square
+                // bounding box, but the visible shape is a circle. For
+                // big bubbles the gap between circle and square corner
+                // is large enough that the hover overlay activates
+                // well before the cursor touches the disc. Gate by
+                // Euclidean distance from the bubble's center so the
+                // hover state matches the rendered circle precisely.
+                //
+                // Hysteresis: a strict `r` check fights the
+                // `.scaleEffect(1.04)` applied on hover — the visual
+                // grow re-runs hit-testing at the new geometry and
+                // can flip the state off on the next continuous-hover
+                // event, producing a visible blink (most noticeable
+                // on small bubbles where 4% is a meaningful fraction
+                // of the rim). Enter on `r`, exit on `r * 1.05` so
+                // the scale-induced jitter sits inside the dead band.
+                let dx = location.x - radius
+                let dy = location.y - radius
+                let distSq = dx * dx + dy * dy
+                let enterR2 = radius * radius
+                let exitR2 = (radius * 1.05) * (radius * 1.05)
+                let threshold = isHovering ? exitR2 : enterR2
+                if distSq <= threshold {
+                    if !isHovering {
+                        isHovering = true
+                        hoverInfo = HoverInfo.load(for: node)
+                        onHoverChange(true)
+                    }
+                    mouseLocation = location
+                } else if isHovering {
+                    isHovering = false
+                    hoverInfo = nil
+                    onHoverChange(false)
                 }
-                mouseLocation = location
             case .ended:
                 isHovering = false
                 hoverInfo = nil
@@ -261,11 +297,12 @@ private struct HoverInfo {
     let items: Int
     let modified: Date?
 
+    @MainActor
     static func load(for node: StorageNode) -> HoverInfo {
         let (label, tint) = classify(path: node.path)
         let mod = (try? FileManager.default.attributesOfItem(atPath: node.path))?[.modificationDate] as? Date
         return HoverInfo(
-            name: node.name == "/" ? "Macintosh HD" : node.name,
+            name: node.name == "/" ? Localization.shared.t(.bubbleMapMacintoshHD) : node.name,
             typeLabel: label,
             typeTint: tint,
             size: node.formattedSize,
@@ -274,18 +311,20 @@ private struct HoverInfo {
         )
     }
 
+    @MainActor
     private static func classify(path: String) -> (String, Color) {
+        let loc = Localization.shared
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        if path == "/" { return ("Volume", Theme.Palette.cyan) }
-        if path == "/Applications" || path.hasPrefix("/Applications/") { return ("Applications", Theme.Palette.cyan) }
-        if path == "/Users" || (path.hasPrefix("/Users/") && !path.hasPrefix(home)) { return ("User folder", Theme.Palette.mint) }
-        if path == home || path.hasPrefix(home + "/") { return ("Your folder", Theme.Palette.mint) }
+        if path == "/" { return (loc.t(.bubbleMapVolume), Theme.Palette.cyan) }
+        if path == "/Applications" || path.hasPrefix("/Applications/") { return (loc.t(.bubbleMapApplications), Theme.Palette.cyan) }
+        if path == "/Users" || (path.hasPrefix("/Users/") && !path.hasPrefix(home)) { return (loc.t(.bubbleMapUserFolder), Theme.Palette.mint) }
+        if path == home || path.hasPrefix(home + "/") { return (loc.t(.bubbleMapYourFolder), Theme.Palette.mint) }
         if path.hasPrefix("/System") || path.hasPrefix("/Library") || path.hasPrefix("/usr") ||
            path.hasPrefix("/private") || path.hasPrefix("/opt") || path.hasPrefix("/bin") ||
            path.hasPrefix("/sbin") || path.hasPrefix("/var") {
-            return ("System folder", Theme.Palette.amber)
+            return (loc.t(.bubbleMapSystemFolder), Theme.Palette.amber)
         }
-        return ("Folder", .white)
+        return (loc.t(.bubbleMapFolder), .white)
     }
 }
 
@@ -301,16 +340,16 @@ private struct BubbleHoverCard: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(info.typeTint)
             HStack(spacing: 6) {
-                Text("Size:").foregroundStyle(.white.opacity(0.55))
+                Text(Localization.shared.t(.bubbleMapSize)).foregroundStyle(.white.opacity(0.55))
                 Text(info.size).foregroundStyle(.white)
                 if info.items > 0 {
                     Text("·").foregroundStyle(.white.opacity(0.4))
-                    Text("\(formatItems(info.items)) items").foregroundStyle(.white)
+                    Text(Localization.shared.t(.bubbleMapItemsFormat, formatItems(info.items))).foregroundStyle(.white)
                 }
             }
             .font(.system(size: 11, weight: .medium))
             if let mod = info.modified {
-                Text("Modified: \(Self.formatter.string(from: mod))")
+                Text(Localization.shared.t(.bubbleMapModifiedFormat, Self.formatter.string(from: mod)))
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.55))
             }

@@ -86,11 +86,11 @@ struct ExpandedAppCard: View {
                 onClose()
             }
         }
-        .alert("Removal Failed", isPresented: Binding(
+        .alert(Localization.shared.t(.removalFailedTitle), isPresented: Binding(
             get: { appState.removalError != nil },
             set: { if !$0 { appState.removalError = nil } }
         )) {
-            Button("OK", role: .cancel) { appState.removalError = nil }
+            Button(Localization.shared.t(.commonOK), role: .cancel) { appState.removalError = nil }
         } message: {
             Text(appState.removalError ?? "")
         }
@@ -123,11 +123,11 @@ struct ExpandedAppCard: View {
                         .opacity(successCheckOpacity)
                 }
 
-                Text("\(app.appName) deleted")
+                Text(Localization.shared.t(.uninstallDeletedFormat, app.appName))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .opacity(successCheckOpacity)
-                Text("Files moved to Trash.")
+                Text(Localization.shared.t(.uninstallFilesMoved))
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.7))
                     .opacity(successCheckOpacity)
@@ -156,8 +156,8 @@ struct ExpandedAppCard: View {
                 Text(ByteCountFormatter.string(fromByteCount: totalSize, countStyle: .file))
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
-                    .help("Total size of all related files")
-                Text("\(appState.selectedFiles.count) of \(appState.discoveredFiles.count) selected")
+                    .help(Localization.shared.t(.helpTotalSize))
+                Text(Localization.shared.t(.uninstallSelectedOfFormat, appState.selectedFiles.count, appState.discoveredFiles.count))
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -178,7 +178,7 @@ struct ExpandedAppCard: View {
         if appState.isScanningAppFiles {
             VStack(spacing: 8) {
                 ProgressView()
-                Text("Scanning related files…")
+                Text(Localization.shared.t(.uninstallScanning))
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -188,7 +188,7 @@ struct ExpandedAppCard: View {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 36))
                     .foregroundStyle(.green)
-                Text("No related files found")
+                Text(Localization.shared.t(.uninstallNoRelated))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white)
             }
@@ -285,15 +285,15 @@ struct ExpandedAppCard: View {
 
     private var footerActions: some View {
         HStack(spacing: 10) {
-            Button("Select all") { appState.selectedFiles = Set(appState.discoveredFiles) }
+            Button(Localization.shared.t(.commonSelectAll)) { appState.selectedFiles = Set(appState.discoveredFiles) }
                 .buttonStyle(.soft)
-            Button("Deselect all") { appState.selectedFiles.removeAll() }
+            Button(Localization.shared.t(.commonDeselectAll)) { appState.selectedFiles.removeAll() }
                 .buttonStyle(.soft)
             Spacer()
             Button {
                 appState.removeSelectedFiles()
             } label: {
-                Text("Delete \(appState.selectedFiles.count) files (\(ByteCountFormatter.string(fromByteCount: selectedSize, countStyle: .file)))")
+                Text(Localization.shared.t(.uninstallDeleteFormat, appState.selectedFiles.count, ByteCountFormatter.string(fromByteCount: selectedSize, countStyle: .file)))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 7)

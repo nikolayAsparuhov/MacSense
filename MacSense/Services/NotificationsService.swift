@@ -33,13 +33,21 @@ enum NotificationsService {
     /// computed the recoverable bytes — this only formats + delivers.
     static func postCleanupSummary(totalRecoverable: Int64, categoryCount: Int) async {
         let formatted = ByteCountFormatter.string(fromByteCount: totalRecoverable, countStyle: .file)
-        let content = UNMutableNotificationContent()
-        content.title = "MacSense scheduled scan"
-        if totalRecoverable > 0 {
-            content.body = "Found \(formatted) recoverable across \(categoryCount) \(categoryCount == 1 ? "category" : "categories"). Open MacSense to review."
-        } else {
-            content.body = "No recoverable space found across \(categoryCount) \(categoryCount == 1 ? "category" : "categories")."
+        let loc = await MainActor.run { Localization.shared }
+        let unit = await MainActor.run {
+            categoryCount == 1
+                ? Localization.shared.t(.scheduleSummaryUnit)
+                : Localization.shared.t(.scheduleSummaryUnits)
         }
+        let title = await MainActor.run { loc.t(.notifScheduledScanTitle) }
+        let body: String = await MainActor.run {
+            totalRecoverable > 0
+                ? loc.t(.notifFoundRecoverableFormat, formatted, categoryCount, unit)
+                : loc.t(.notifNoRecoverableFormat, categoryCount, unit)
+        }
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
         content.sound = .default
         content.userInfo = [cleanupSectionPayloadKey: "cleanup"]
 

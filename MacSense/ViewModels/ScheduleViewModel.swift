@@ -77,8 +77,9 @@ final class ScheduleViewModel: ObservableObject {
     /// expose it — this label echoes the cadence so the user sees
     /// confirmation that the schedule is active.
     var summaryLine: String {
+        let loc = Localization.shared
         let cats = categories.count
-        let unit = cats == 1 ? "category" : "categories"
-        return "\(cadence.label) · \(cats) \(unit)"
+        let unit = cats == 1 ? loc.t(.scheduleSummaryUnit) : loc.t(.scheduleSummaryUnits)
+        return "\(loc.t(cadence.labelKey)) · \(cats) \(unit)"
     }
 }

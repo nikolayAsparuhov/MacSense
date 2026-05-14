@@ -29,6 +29,8 @@ struct SizeTabView: View {
 
     private var breadcrumb: some View {
         HStack(spacing: 6) {
+            HelpIcon(entryID: "storage-graph")
+
             if appState.sizeNavStack.count > 1 {
                 Button {
                     withAnimation(AppAnimation.sectionTransition) {
@@ -125,11 +127,10 @@ struct SizeTabView: View {
                                 appState.toggleSizeNodeSelection(node)
                             }
                         )
-                        .coachMark(
-                            id: "bubbleMap",
-                            title: "Bubble Map",
-                            body: "Each circle is a folder, sized by what it consumes. Click any bubble to drill in; the breadcrumb tracks your path."
-                        )
+                        .overlay(alignment: .topTrailing) {
+                            HelpIcon(entryID: "bubble-map")
+                                .padding(8)
+                        }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         // Treat each folder as a distinct view so SwiftUI
                         // runs the configured transition on swap instead of
@@ -154,21 +155,26 @@ struct SizeTabView: View {
                 .animation(.spring(response: 0.4, dampingFraction: 0.85),
                            value: appState.sizeNavSelection.isEmpty)
                 .alert(
-                    "Move \(appState.sizeNavPendingDelete?.count ?? 0) item\((appState.sizeNavPendingDelete?.count ?? 0) == 1 ? "" : "s") to Trash?",
+                    {
+                        let count = appState.sizeNavPendingDelete?.count ?? 0
+                        return count == 1
+                            ? Localization.shared.t(.sizeTabMoveTrashTitleSingular)
+                            : Localization.shared.t(.sizeTabMoveTrashTitleFormat, count)
+                    }(),
                     isPresented: Binding(
                         get: { appState.sizeNavPendingDelete != nil },
                         set: { if !$0 { appState.cancelTrashSelectedSizeNodes() } }
                     ),
                     presenting: appState.sizeNavPendingDelete
                 ) { _ in
-                    Button("Cancel", role: .cancel) { appState.cancelTrashSelectedSizeNodes() }
-                    Button("Move to Trash", role: .destructive) { appState.confirmTrashSelectedSizeNodes() }
+                    Button(Localization.shared.t(.commonCancel), role: .cancel) { appState.cancelTrashSelectedSizeNodes() }
+                    Button(Localization.shared.t(.commonMoveToTrash), role: .destructive) { appState.confirmTrashSelectedSizeNodes() }
                 } message: { items in
                     let total = items.reduce(Int64(0)) { $0 + $1.size }
                     let bytes = ByteCountFormatter.string(fromByteCount: total, countStyle: .file)
                     let names = items.prefix(3).map(\.name).joined(separator: ", ")
-                    let suffix = items.count > 3 ? " + \(items.count - 3) more" : ""
-                    Text("\(names)\(suffix) (\(bytes)). Files move to Trash and can be restored from there.")
+                    let suffix = items.count > 3 ? Localization.shared.t(.sizeTabMoveTrashMoreFormat, items.count - 3) : ""
+                    Text(Localization.shared.t(.sizeTabMoveTrashDetailFormat, names + suffix, bytes))
                 }
             }
         } else {
@@ -180,11 +186,11 @@ struct SizeTabView: View {
         let count = appState.sizeNavSelection.count
         let bytes = appState.sizeNavSelectedBytes()
         return HStack(spacing: 12) {
-            Text("\(count) selected · \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))")
+            Text(Localization.shared.t(.sizeTabSelectedCountFormat, count, ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)))
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.white)
 
-            Button("Clear") { appState.clearSizeNavSelection() }
+            Button(Localization.shared.t(.commonClear)) { appState.clearSizeNavSelection() }
                 .buttonStyle(.soft)
                 .controlSize(.small)
 
@@ -193,7 +199,7 @@ struct SizeTabView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "trash")
-                    Text("Delete")
+                    Text(Localization.shared.t(.sizeTabDelete))
                 }
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.white)
@@ -256,12 +262,12 @@ struct SizeTabView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 32, height: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(node.name == "/" ? "Macintosh HD" : node.name)
+                Text(node.name == "/" ? Localization.shared.t(.bubbleMapMacintoshHD) : node.name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .truncationMode(.middle)
-                Text("\(ByteCountFormatter.string(fromByteCount: node.size, countStyle: .file))  ·  \(formatItemCount(node.childCount)) items")
+                Text(Localization.shared.t(.sizeTabSidebarItemsFormat, ByteCountFormatter.string(fromByteCount: node.size, countStyle: .file), formatItemCount(node.childCount)))
                     .font(.system(size: 10))
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -328,7 +334,7 @@ struct SizeTabView: View {
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.white.opacity(0.7))
                     .frame(width: 18, alignment: .center)
-                Text("Other items")
+                Text(Localization.shared.t(.sizeTabOtherItems))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white)
                 Spacer(minLength: 4)
@@ -356,7 +362,7 @@ struct SizeTabView: View {
         VStack(spacing: 14) {
             ScanProgressBar(
                 progress: nil,
-                label: "Building storage graph…",
+                label: Localization.shared.t(.storageBuildingGraph),
                 gradient: Theme.sectionGradient(for: .storage),
                 glow: Theme.accent(for: .storage)
             )
@@ -370,7 +376,7 @@ struct SizeTabView: View {
             Image(systemName: "lock.fill")
                 .font(.system(size: 32))
                 .foregroundStyle(.white.opacity(0.6))
-            Text("Nothing readable here")
+            Text(Localization.shared.t(.sizeTabEmptyMessage))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white)
             Text(path)
@@ -404,7 +410,7 @@ struct SizeTabView: View {
         if !tail.isEmpty, tailSize > 0 {
             bubbleNodes.append(StorageNode(
                 path: "<other>",
-                name: "Other items",
+                name: Localization.shared.t(.sizeTabOtherItems),
                 size: tailSize,
                 isDirectory: false,
                 childCount: tail.count,

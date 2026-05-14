@@ -13,6 +13,14 @@ enum ScheduleCadence: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    var labelKey: LocalizationKey {
+        switch self {
+        case .daily:   return .cadenceDaily
+        case .weekly:  return .cadenceWeekly
+        case .monthly: return .cadenceMonthly
+        }
+    }
+
     /// Earliest-begin offset passed to `BGTaskScheduler`. macOS treats
     /// this as a hint, not a guarantee — see spec for the constraint.
     var interval: TimeInterval {

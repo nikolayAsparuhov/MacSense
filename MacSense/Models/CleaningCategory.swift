@@ -31,4 +31,39 @@ enum CleaningCategory: String, CaseIterable, Identifiable, Codable {
         case .developerCaches:  return "Xcode, Homebrew, npm/yarn/pnpm, Docker, Go, Cargo"
         }
     }
+
+    /// Help glossary entry id for the inline `?` popover. Matches a
+    /// markdown file under `Resources/Help/`.
+    var helpEntryID: String {
+        switch self {
+        case .systemJunk:       return "system-junk"
+        case .userCache:        return "user-cache"
+        case .trashBins:        return "trash-bins"
+        case .purgeableSpace:   return "purgeable-space"
+        case .developerCaches:  return "developer-caches"
+        }
+    }
+
+    /// Localization key for the category's display name. Use
+    /// `loc.t(cat.titleKey)` from views — `rawValue` stays as the
+    /// stable internal id (used for persistence).
+    var titleKey: LocalizationKey {
+        switch self {
+        case .systemJunk:       return .categorySystemJunk
+        case .userCache:        return .categoryUserCache
+        case .trashBins:        return .categoryTrashBins
+        case .purgeableSpace:   return .categoryPurgeable
+        case .developerCaches:  return .categoryDevCaches
+        }
+    }
+
+    var subtitleKey: LocalizationKey {
+        switch self {
+        case .systemJunk:       return .categorySystemJunkSubtitle
+        case .userCache:        return .categoryUserCacheSubtitle
+        case .trashBins:        return .categoryTrashBinsSubtitle
+        case .purgeableSpace:   return .categoryPurgeableSubtitle
+        case .developerCaches:  return .categoryDevCachesSubtitle
+        }
+    }
 }

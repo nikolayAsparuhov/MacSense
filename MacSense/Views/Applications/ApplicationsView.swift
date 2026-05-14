@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ApplicationsView: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var loc = Localization.shared
     @State private var subTab: SubTab = .installed
 
     enum SubTab: String, CaseIterable, Identifiable {
@@ -15,6 +16,14 @@ struct ApplicationsView: View {
             case .installed:  return "square.grid.2x2.fill"
             case .unused:     return "clock.badge.exclamationmark.fill"
             case .loginItems: return "play.circle.fill"
+            }
+        }
+
+        var titleKey: LocalizationKey {
+            switch self {
+            case .installed:  return .applicationsInstalledTab
+            case .unused:     return .applicationsUnusedTab
+            case .loginItems: return .applicationsLoginItemsTab
             }
         }
     }
@@ -52,7 +61,7 @@ struct ApplicationsView: View {
                     HStack(spacing: 7) {
                         Image(systemName: tab.icon)
                             .font(.system(size: 12, weight: .bold))
-                        Text(tab.rawValue)
+                        Text(loc.t(tab.titleKey))
                             .font(.system(size: 13, weight: .bold))
                     }
                     .padding(.vertical, 9)

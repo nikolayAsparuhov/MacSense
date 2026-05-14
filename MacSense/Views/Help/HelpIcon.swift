@@ -24,7 +24,7 @@ struct HelpIcon: View {
         }
         .buttonStyle(.plain)
         .noFocusRing()
-        .help("What's this?")
+        .help(Localization.shared.t(.helpWhatIsThis))
         .popover(isPresented: $showingPopover, arrowEdge: .top) {
             HelpPopover(entryID: entryID, onReadMore: { id in
                 showingPopover = false

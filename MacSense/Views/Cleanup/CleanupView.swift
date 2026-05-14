@@ -10,6 +10,7 @@ import SwiftUI
 /// re-scan replaces results, that's the main flow).
 struct CleanupView: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var loc = Localization.shared
 
     /// Show detail when results exist AND no smart scan is currently
     /// running. Re-scanning drops back to the hero loading state — a
@@ -35,11 +36,11 @@ struct CleanupView: View {
 
     private var heroLayout: some View {
         HeroLanding(
-            title: "Cleanup",
-            tagline: "Free up disk space by trimming caches, system junk, trashed files, purgeable bytes, and developer caches.",
+            title: loc.t(.cleanupTitle),
+            tagline: loc.t(.cleanupTagline),
             secondaryActionTitle: nil,
             secondaryAction: nil,
-            ctaTitle: "Scan",
+            ctaTitle: loc.t(.commonScan),
             ctaIcon: nil,
             ctaGradient: Theme.sectionGradient(for: .cleanup),
             ctaGlow: Theme.accent(for: .cleanup),
@@ -53,19 +54,14 @@ struct CleanupView: View {
         ) {
             sparkleHero
         }
-        .coachMark(
-            id: "smartScan",
-            title: "Smart Scan",
-            body: "Tap Scan to walk every cleanup category and total recoverable space — read-only, nothing is deleted."
-        )
     }
 
     private var scanLabel: String {
         if appState.isSmartScanRunning {
             let p = Int((appState.smartScanProgress * 100).rounded())
-            return "Scanning · \(p)%"
+            return loc.t(.cleanupScanningProgress, p)
         }
-        return "Scanning…"
+        return loc.t(.cleanupScanningGeneric)
     }
 
     private var sparkleHero: some View {
@@ -166,7 +162,7 @@ struct CleanupView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
-                        Text("Cleanup summary")
+                        Text(loc.t(.cleanupSummaryTitle))
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundStyle(.white)
                         HelpIcon(entryID: "recoverable-space")
@@ -174,7 +170,7 @@ struct CleanupView: View {
 
                     if totalRecoverable > 0 {
                         HStack(spacing: 6) {
-                            Text("Found")
+                            Text(loc.t(.cleanupSummaryFoundPrefix))
                                 .font(.system(size: 13))
                                 .foregroundStyle(.white.opacity(0.7))
                             RollingByteCount(
@@ -183,16 +179,16 @@ struct CleanupView: View {
                                 foreground: AnyShapeStyle(Theme.brandGradient)
                             )
                             .animation(AppAnimation.value, value: totalRecoverable)
-                            Text("recoverable across categories.")
+                            Text(loc.t(.cleanupSummaryFoundSuffix))
                                 .font(.system(size: 13))
                                 .foregroundStyle(.white.opacity(0.7))
                         }
                     } else if appState.isSmartScanRunning {
-                        Text("Scanning every category…")
+                        Text(loc.t(.cleanupSummaryScanning))
                             .font(.system(size: 13))
                             .foregroundStyle(.white.opacity(0.7))
                     } else {
-                        Text("Nothing recoverable yet — try a full scan.")
+                        Text(loc.t(.cleanupSummaryEmpty))
                             .font(.system(size: 13))
                             .foregroundStyle(.white.opacity(0.7))
                     }
@@ -214,7 +210,7 @@ struct CleanupView: View {
                         Button {
                             appState.runSmartScan()
                         } label: {
-                            Text("Re-scan")
+                            Text(loc.t(.commonRescan))
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(.white)
                                 .padding(.vertical, 10)
@@ -244,7 +240,34 @@ struct CleanupView: View {
     private func categoryCard(for cat: CleaningCategory) -> some View {
         let state = appState.categoryStates[cat] ?? .idle
         let result = appState.categoryResults[cat]
-        Button {
+        // Use `onTapGesture` instead of an outer Button so the inline
+        // HelpIcon (a Button itself) can capture its own taps without
+        // SwiftUI's nested-button hit-testing collapsing them into
+        // the parent.
+        GlossyCard(accent: Theme.sectionGradient(for: .cleanup), accentColor: Theme.Palette.cyan) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    Image(systemName: cat.icon)
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(Theme.Palette.cyan)
+                    HelpIcon(entryID: cat.helpEntryID)
+                    Spacer()
+                    statusPill(state: state, result: result)
+                }
+                Text(loc.t(cat.titleKey))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(loc.t(cat.subtitleKey))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 6)
+                sizeRow(state: state, result: result)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
             if result != nil {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
                     appState.openedCategory = cat
@@ -252,31 +275,7 @@ struct CleanupView: View {
             } else {
                 appState.scanCategory(cat)
             }
-        } label: {
-            GlossyCard(accent: Theme.sectionGradient(for: .cleanup), accentColor: Theme.Palette.cyan) {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Image(systemName: cat.icon)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(Theme.Palette.cyan)
-                        Spacer()
-                        statusPill(state: state, result: result)
-                    }
-                    Text(cat.rawValue)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(cat.subtitle)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 6)
-                    sizeRow(state: state, result: result)
-                }
-            }
         }
-        .buttonStyle(.plain)
-        .noFocusRing()
     }
 
     @ViewBuilder
@@ -285,25 +284,25 @@ struct CleanupView: View {
         case .scanning:
             HStack(spacing: 4) {
                 ProgressView().controlSize(.mini)
-                Text("Scanning")
+                Text(loc.t(.categoryStateScanning))
             }
             .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(.white.opacity(0.7))
         case .cleaning(let p):
-            Text("Cleaning \(Int(p * 100))%")
+            Text(loc.t(.categoryStateCleaning, Int(p * 100)))
                 .font(.system(size: 10, weight: .semibold))
                 .padding(.horizontal, 6).padding(.vertical, 2)
                 .background(Capsule().fill(Theme.Palette.amber.opacity(0.2)))
                 .foregroundStyle(Theme.Palette.amber)
         case .cleaned(let freed):
-            Text("Freed \(ByteCountFormatter.string(fromByteCount: freed, countStyle: .file))")
+            Text(loc.t(.categoryStateFreed, ByteCountFormatter.string(fromByteCount: freed, countStyle: .file)))
                 .font(.system(size: 10, weight: .semibold))
                 .padding(.horizontal, 6).padding(.vertical, 2)
                 .background(Capsule().fill(Theme.Palette.mint.opacity(0.2)))
                 .foregroundStyle(Theme.Palette.mint)
         case .cleanedWithErrors(let freed, let message):
             VStack(alignment: .leading, spacing: 4) {
-                Text("Freed \(ByteCountFormatter.string(fromByteCount: freed, countStyle: .file))")
+                Text(loc.t(.categoryStateFreed, ByteCountFormatter.string(fromByteCount: freed, countStyle: .file)))
                     .font(.system(size: 10, weight: .semibold))
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(Capsule().fill(Theme.Palette.amber.opacity(0.2)))
@@ -316,14 +315,14 @@ struct CleanupView: View {
             }
         case .scanned:
             if let result, result.itemCount > 0 {
-                Text("\(result.itemCount) items")
+                Text(loc.t(.categoryItemsCount, result.itemCount))
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.7))
             } else {
-                Text("Clean").font(.system(size: 10, weight: .semibold)).foregroundStyle(.green)
+                Text(loc.t(.categoryStateClean)).font(.system(size: 10, weight: .semibold)).foregroundStyle(.green)
             }
         case .idle:
-            Text("Tap to scan")
+            Text(loc.t(.categoryStateTapToScan))
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.6))
         }

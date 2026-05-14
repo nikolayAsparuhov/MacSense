@@ -9,11 +9,11 @@ struct WiFiInfo {
         case ethernet
         case unknown
 
-        var label: String {
+        var labelKey: LocalizationKey {
             switch self {
-            case .wifi:     return "Wi-Fi"
-            case .ethernet: return "Ethernet"
-            case .unknown:  return "Unknown"
+            case .wifi:     return .wifiKindWiFi
+            case .ethernet: return .wifiKindEthernet
+            case .unknown:  return .wifiKindUnknown
             }
         }
     }

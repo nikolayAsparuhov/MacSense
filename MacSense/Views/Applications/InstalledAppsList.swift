@@ -4,6 +4,7 @@ import SwiftUI
 /// open the uninstall sheet showing all related files.
 struct InstalledAppsList: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var loc = Localization.shared
     @State private var search = ""
     @State private var selection: InstalledApp.ID?
     @State private var hoveredID: InstalledApp.ID?
@@ -105,10 +106,10 @@ struct InstalledAppsList: View {
 
     private var heroLayout: some View {
         HeroLanding(
-            title: "Installed Apps",
-            tagline: "Discover every app on your Mac with combined size — bundle plus caches, prefs, containers. One-click uninstall removes the lot.",
+            title: loc.t(.installedHeroTitle),
+            tagline: loc.t(.installedHeroTagline),
             secondaryActionTitle: nil, secondaryAction: nil,
-            ctaTitle: "Discover",
+            ctaTitle: loc.t(.installedHeroDiscover),
             ctaIcon: nil,
             ctaGradient: Theme.sectionGradient(for: .applications),
             ctaGlow: Theme.accent(for: .applications),
@@ -118,7 +119,7 @@ struct InstalledAppsList: View {
             },
             isScanning: appState.isLoadingApps,
             scanProgress: nil,
-            scanLabel: "Discovering apps…"
+            scanLabel: loc.t(.installedHeroDiscovering)
         ) {
             Hero3DIcon.forSection(.applications, size: 220)
                 .frame(height: 320)
@@ -135,7 +136,7 @@ struct InstalledAppsList: View {
                 .padding(.bottom, 14)
 
             if appState.isLoadingApps && appState.installedApps.isEmpty {
-                ProgressView("Discovering apps…")
+                ProgressView(Localization.shared.t(.installedAppsDiscoveringProgress))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if appState.installedApps.isEmpty {
                 emptyState
@@ -150,7 +151,7 @@ struct InstalledAppsList: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField("Search apps", text: $search)
+                TextField(loc.t(.commonSearchApps), text: $search)
                     .textFieldStyle(.plain)
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
@@ -158,7 +159,7 @@ struct InstalledAppsList: View {
 
             Spacer()
 
-            Text("\(appState.installedApps.count) apps")
+            Text(loc.t(.installedAppsCountFormat, appState.installedApps.count))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
@@ -168,7 +169,7 @@ struct InstalledAppsList: View {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.soft)
-            .help("Refresh")
+            .help(loc.t(.commonRefreshTooltip))
         }
     }
 
@@ -249,9 +250,9 @@ struct InstalledAppsList: View {
             Image(systemName: "square.grid.2x2.fill")
                 .font(.system(size: 36))
                 .gradientText(Theme.sectionGradient(for: .applications))
-            Text("No apps found")
+            Text(loc.t(.installedNoApps))
                 .font(.system(size: 15, weight: .semibold))
-            Button("Refresh") { appState.loadInstalledApps() }
+            Button(loc.t(.commonRefresh)) { appState.loadInstalledApps() }
                 .buttonStyle(.soft)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

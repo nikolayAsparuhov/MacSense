@@ -48,6 +48,31 @@ enum MediaType: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Help glossary entry id for the inline `?` popover.
+    var helpEntryID: String {
+        switch self {
+        case .videos:    return "media-videos"
+        case .photos:    return "media-photos"
+        case .audio:     return "media-audio"
+        case .archives:  return "media-archives"
+        case .documents: return "media-documents"
+        case .code:      return "media-code"
+        case .other:     return "media-other"
+        }
+    }
+
+    var labelKey: LocalizationKey {
+        switch self {
+        case .videos:    return .mediaVideos
+        case .photos:    return .mediaPhotos
+        case .audio:     return .mediaAudio
+        case .archives:  return .mediaArchives
+        case .documents: return .mediaDocuments
+        case .code:      return .mediaCode
+        case .other:     return .mediaOther
+        }
+    }
+
     static let extensions: [MediaType: Set<String>] = [
         .videos:    ["mp4","mov","mkv","avi","webm","m4v","flv","wmv","mpeg","mpg","3gp","ts"],
         .photos:    ["jpg","jpeg","png","heic","heif","gif","bmp","tiff","tif","webp","raw","cr2","cr3","nef","dng","arw","orf"],

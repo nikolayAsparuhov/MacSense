@@ -7,6 +7,7 @@ import SwiftUI
 /// morph from the card frame on the grid.
 struct ExpandedCategoryCard: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var loc = Localization.shared
     let category: CleaningCategory
     @State private var search = ""
     @State private var hoveredID: UUID?
@@ -59,10 +60,10 @@ struct ExpandedCategoryCard: View {
                 .frame(width: 36, height: 36)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(category.rawValue)
+                Text(Localization.shared.t(category.titleKey))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                Text(category.subtitle)
+                Text(Localization.shared.t(category.subtitleKey))
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -74,7 +75,7 @@ struct ExpandedCategoryCard: View {
                     Text(result.formattedSize)
                         .font(.system(size: 16, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("\(appState.selectedCount(in: category)) of \(result.itemCount) selected")
+                    Text(loc.t(.categoryDetailSelectedFormat, appState.selectedCount(in: category), result.itemCount))
                         .font(.system(size: 11))
                         .foregroundStyle(.white.opacity(0.6))
                 }
@@ -98,7 +99,7 @@ struct ExpandedCategoryCard: View {
     private var searchBar: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass").foregroundStyle(.white.opacity(0.6))
-            TextField("Search files", text: $search)
+            TextField(loc.t(.commonSearchFiles), text: $search)
                 .textFieldStyle(.plain)
                 .foregroundStyle(.white)
         }
@@ -139,7 +140,7 @@ struct ExpandedCategoryCard: View {
         let tool = DevCacheCatalog.tool(forSubCategory: subCategory)
         let totalBytes = items.reduce(0) { $0 + $1.size }
         let totalLabel = ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .file)
-        let title = tool?.displayName ?? (subCategory.isEmpty ? "Other" : subCategory)
+        let title = tool?.displayName ?? (subCategory.isEmpty ? Localization.shared.t(.mediaOther) : subCategory)
         let accent = tool?.accent ?? Theme.Palette.cyan
         let isExpanded = expandedGroups.contains(subCategory)
 
@@ -159,7 +160,7 @@ struct ExpandedCategoryCard: View {
                         Text(title)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(.white)
-                        Text("\(items.count) location\(items.count == 1 ? "" : "s")")
+                        Text(loc.t(items.count == 1 ? .categoryDetailLocationFormat : .categoryDetailLocationsFormat, items.count))
                             .font(.system(size: 11))
                             .foregroundStyle(.white.opacity(0.55))
                     }
@@ -275,10 +276,10 @@ struct ExpandedCategoryCard: View {
             Image(systemName: "checkmark.circle")
                 .font(.system(size: 38))
                 .foregroundStyle(.green)
-            Text("Nothing to clean")
+            Text(loc.t(.categoryDetailNothingToCleanTitle))
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
-            Text("This category is already clean. Re-scan if you've used apps since the last check.")
+            Text(loc.t(.categoryDetailNothingToCleanBody))
                 .font(.system(size: 12))
                 .foregroundStyle(.white.opacity(0.6))
                 .multilineTextAlignment(.center)
@@ -292,12 +293,12 @@ struct ExpandedCategoryCard: View {
 
     private var footer: some View {
         HStack(spacing: 10) {
-            Button("Select all")  { appState.selectAll(in: category) }
+            Button(loc.t(.commonSelectAll))  { appState.selectAll(in: category) }
                 .buttonStyle(.soft)
-            Button("Deselect all") { appState.deselectAll(in: category) }
+            Button(loc.t(.commonDeselectAll)) { appState.deselectAll(in: category) }
                 .buttonStyle(.soft)
             Spacer()
-            Button("Re-scan") { appState.scanCategory(category) }
+            Button(loc.t(.commonRescan)) { appState.scanCategory(category) }
                 .buttonStyle(.soft)
             Button {
                 appState.clean(category)
@@ -305,7 +306,7 @@ struct ExpandedCategoryCard: View {
                     appState.openedCategory = nil
                 }
             } label: {
-                Text("Clean \(ByteCountFormatter.string(fromByteCount: appState.selectedSize(in: category), countStyle: .file))")
+                Text(loc.t(.categoryDetailCleanFormat, ByteCountFormatter.string(fromByteCount: appState.selectedSize(in: category), countStyle: .file)))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 7)

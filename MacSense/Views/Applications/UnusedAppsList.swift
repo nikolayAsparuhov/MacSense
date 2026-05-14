@@ -11,6 +11,7 @@ import SwiftUI
 /// driven by `appState.selectedApp`.
 struct UnusedAppsList: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var loc = Localization.shared
     @State private var threshold: UnusedThreshold = UnusedThreshold.current
 
     private var staleApps: [InstalledApp] {
@@ -31,15 +32,22 @@ struct UnusedAppsList: View {
 
     private var hasAny: Bool { !staleApps.isEmpty || !neverOpenedApps.isEmpty }
 
+    /// Mirrors `InstalledAppsList.hasDiscovered` — show the hero
+    /// landing until a discovery scan has completed at least once
+    /// in this session. Without this both Unused tabs would show an
+    /// empty list on first entry.
+    private var hasDiscovered: Bool {
+        !appState.installedApps.isEmpty && !appState.isLoadingApps
+    }
+
     var body: some View {
         let isExpanded = appState.selectedApp != nil
         ZStack {
             Group {
-                if appState.installedApps.isEmpty && appState.isLoadingApps {
-                    ProgressView("Discovering apps…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
+                if hasDiscovered {
                     content.transition(.contentLift)
+                } else {
+                    heroLayout.transition(.contentLift)
                 }
             }
             .scaleEffect(isExpanded ? 0.96 : 1.0, anchor: .center)
@@ -76,11 +84,6 @@ struct UnusedAppsList: View {
         }
         .clipped()
         .animation(.spring(response: 0.45, dampingFraction: 0.86), value: appState.selectedApp)
-        .onAppear {
-            if appState.installedApps.isEmpty && !appState.isLoadingApps {
-                appState.loadInstalledApps()
-            }
-        }
         .background(
             Button("") {
                 if appState.selectedApp != nil { closeExpanded() }
@@ -99,6 +102,30 @@ struct UnusedAppsList: View {
         appState.discoveredFiles = []
         appState.selectedFiles = []
         appState.deletionSucceededFor = nil
+    }
+
+    // MARK: - Hero
+
+    private var heroLayout: some View {
+        HeroLanding(
+            title: loc.t(.unusedHeroTitle),
+            tagline: loc.t(.unusedHeroTagline),
+            secondaryActionTitle: nil, secondaryAction: nil,
+            ctaTitle: loc.t(.installedHeroDiscover),
+            ctaIcon: nil,
+            ctaGradient: Theme.sectionGradient(for: .applications),
+            ctaGlow: Theme.accent(for: .applications),
+            ctaDisabled: false,
+            ctaAction: {
+                if appState.installedApps.isEmpty { appState.loadInstalledApps() }
+            },
+            isScanning: appState.isLoadingApps,
+            scanProgress: nil,
+            scanLabel: loc.t(.installedHeroDiscovering)
+        ) {
+            Hero3DIcon.forSection(.applications, size: 220)
+                .frame(height: 320)
+        }
     }
 
     // MARK: - Content
@@ -150,7 +177,7 @@ struct UnusedAppsList: View {
 
             Spacer()
 
-            Text("\(staleApps.count) stale · \(neverOpenedApps.count) never opened")
+            Text(loc.t(.unusedAppsCountStaleNever, staleApps.count, neverOpenedApps.count))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
@@ -160,7 +187,7 @@ struct UnusedAppsList: View {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.soft)
-            .help("Refresh")
+            .help(loc.t(.commonRefreshTooltip))
         }
     }
 
@@ -170,14 +197,14 @@ struct UnusedAppsList: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 6) {
                 if !staleApps.isEmpty {
-                    sectionHeader("Unused for ≥ \(threshold.rawValue) days")
+                    sectionHeader(loc.t(.unusedSectionStale, threshold.rawValue))
                     ForEach(Array(staleApps.enumerated()), id: \.element.id) { idx, app in
                         appRow(app, isNeverOpened: false)
                             .cascadeAppear(index: idx, base: 0.0, step: 0.018, cap: 0.35)
                     }
                 }
                 if !neverOpenedApps.isEmpty {
-                    sectionHeader("Never opened")
+                    sectionHeader(loc.t(.unusedSectionNeverOpened))
                         .padding(.top, staleApps.isEmpty ? 0 : 12)
                     ForEach(Array(neverOpenedApps.enumerated()), id: \.element.id) { idx, app in
                         appRow(app, isNeverOpened: true)
@@ -240,7 +267,7 @@ struct UnusedAppsList: View {
     @ViewBuilder
     private func pill(for app: InstalledApp, isNeverOpened: Bool) -> some View {
         if isNeverOpened {
-            Text("Never opened")
+            Text(loc.t(.unusedNeverOpened))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Theme.Palette.amber)
                 .padding(.horizontal, 8).padding(.vertical, 3)
@@ -258,7 +285,7 @@ struct UnusedAppsList: View {
 
     private func relativeLabel(for date: Date) -> String {
         let days = Int(Date().timeIntervalSince(date) / 86_400)
-        return "\(days)d ago"
+        return loc.t(.unusedDaysAgoSuffix, days)
     }
 
     // MARK: - Empty hero
@@ -266,10 +293,10 @@ struct UnusedAppsList: View {
     private var emptyHero: some View {
         VStack(spacing: 16) {
             Hero3DIcon.forSection(.applications, size: 140)
-            Text("Nothing stale — nicely curated.")
+            Text(loc.t(.unusedNothingStale))
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
-            Text("Every app on this Mac was opened within the last \(threshold.rawValue) days.")
+            Text(loc.t(.unusedNothingStaleBody, threshold.rawValue))
                 .font(.system(size: 13))
                 .foregroundStyle(.white.opacity(0.6))
                 .multilineTextAlignment(.center)

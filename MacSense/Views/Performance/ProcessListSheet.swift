@@ -77,25 +77,25 @@ struct ProcessListSheet: View {
         }
         .onExitCommand { dismiss() }
         .alert(
-            "Quit \(pendingKill?.displayName ?? "")?",
+            Localization.shared.t(.processQuitTitleFormat, pendingKill?.displayName ?? ""),
             isPresented: Binding(
                 get: { pendingKill != nil },
                 set: { if !$0 { pendingKill = nil } }
             ),
             presenting: pendingKill
         ) { proc in
-            Button("Cancel", role: .cancel) { pendingKill = nil }
-            Button("Quit", role: .destructive) { performKill(proc, force: false) }
-            Button("Force Quit") { performKill(proc, force: true) }
+            Button(Localization.shared.t(.commonCancel), role: .cancel) { pendingKill = nil }
+            Button(Localization.shared.t(.processQuit), role: .destructive) { performKill(proc, force: false) }
+            Button(Localization.shared.t(.processForceQuit)) { performKill(proc, force: true) }
         } message: { proc in
-            Text("PID \(proc.pid) · \(proc.user)\nQuit sends SIGTERM, Force Quit sends SIGKILL. Processes owned by another user (root, _windowserver) can't be terminated without admin.")
+            Text(Localization.shared.t(.processQuitDetail, proc.pid, proc.user))
         }
-        .alert("Couldn't quit process",
+        .alert(Localization.shared.t(.processCantQuitTitle),
                isPresented: Binding(
                    get: { killError != nil },
                    set: { if !$0 { killError = nil } }
                )) {
-            Button("OK", role: .cancel) { killError = nil }
+            Button(Localization.shared.t(.commonOK), role: .cancel) { killError = nil }
         } message: {
             Text(killError ?? "")
         }
@@ -107,18 +107,18 @@ struct ProcessListSheet: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(Theme.Palette.cyan)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Processes")
+                Text(Localization.shared.t(.processesTitle))
                     .font(.system(size: 16, weight: .bold, design: .rounded))
-                Text("\(processes.count) running · refreshing every 2s")
+                Text(Localization.shared.t(.processRunningRefreshFormat, processes.count))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button { refresh() } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-            .buttonStyle(.soft)
-            .help("Refresh now")
+            Text(Localization.shared.t(.performanceLive))
+                .font(.system(size: 9, weight: .bold))
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(Capsule().fill(.green.opacity(0.18)))
+                .foregroundStyle(.green)
             Button { dismiss() } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 22))
@@ -134,7 +134,7 @@ struct ProcessListSheet: View {
         HStack(spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search PID or name", text: $search)
+                TextField(Localization.shared.t(.processSearchPlaceholder), text: $search)
                     .textFieldStyle(.plain)
             }
             .padding(.horizontal, 10).padding(.vertical, 6)
@@ -142,7 +142,7 @@ struct ProcessListSheet: View {
 
             Spacer()
 
-            Text("\(filtered.count) shown")
+            Text(Localization.shared.t(.processShownFormat, filtered.count))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
         }
@@ -152,10 +152,10 @@ struct ProcessListSheet: View {
     private var listHeader: some View {
         HStack(spacing: 10) {
             sortHeaderButton("PID", column: .pid, width: 60, alignment: .trailing)
-            sortHeaderButton("Name", column: .name, width: nil, alignment: .leading)
+            sortHeaderButton(Localization.shared.t(.processColName), column: .name, width: nil, alignment: .leading)
             sortHeaderButton("CPU%", column: .cpu, width: 60, alignment: .trailing)
-            sortHeaderButton("Memory", column: .memory, width: 90, alignment: .trailing)
-            sortHeaderButton("User", column: .user, width: 90, alignment: .leading)
+            sortHeaderButton(Localization.shared.t(.processColMemory), column: .memory, width: 90, alignment: .trailing)
+            sortHeaderButton(Localization.shared.t(.processColUser), column: .user, width: 90, alignment: .leading)
             Spacer().frame(width: 36)
         }
         .font(.system(size: 11, weight: .semibold))
@@ -239,7 +239,7 @@ struct ProcessListSheet: View {
             }
             .buttonStyle(.borderless)
             .frame(width: 36)
-            .help("Quit \(proc.displayName)")
+            .help(Localization.shared.t(.helpQuitFormat, proc.displayName))
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
         .background(
@@ -255,7 +255,7 @@ struct ProcessListSheet: View {
     private var footer: some View {
         HStack {
             Spacer()
-            Text("Tip: search by PID, command name, or full path")
+            Text(Localization.shared.t(.processSearchHint))
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
             Spacer()
@@ -277,8 +277,8 @@ struct ProcessListSheet: View {
     private func performKill(_ proc: SystemProcess, force: Bool) {
         let ok = force ? ProcessLister.forceKill(proc.pid) : ProcessLister.terminate(proc.pid)
         if !ok {
-            let action = force ? "Force quit" : "Quit"
-            killError = "\(action) failed for PID \(proc.pid). Owner: \(proc.user). Try Force Quit, or run with admin privileges if the process is owned by another user."
+            let action = Localization.shared.t(force ? .processActionForceQuit : .processActionQuit)
+            killError = Localization.shared.t(.processQuitFailedFormat, action, proc.pid, proc.user)
         } else {
             // Optimistically drop from the list — refresh tick will
             // reconcile.
