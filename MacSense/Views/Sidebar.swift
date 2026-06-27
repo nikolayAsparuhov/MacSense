@@ -69,15 +69,12 @@ struct Sidebar: View {
 
     private var brandHeader: some View {
         HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Theme.brandGradient)
-                Image(systemName: "speedometer")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.white)
-            }
-            .frame(width: 34, height: 34)
-            .shadow(color: Theme.Palette.cyan.opacity(0.45), radius: 8, x: 0, y: 4)
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 34, height: 34)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .shadow(color: Theme.Palette.cyan.opacity(0.45), radius: 8, x: 0, y: 4)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("MacSense")

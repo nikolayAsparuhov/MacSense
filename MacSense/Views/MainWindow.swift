@@ -59,11 +59,15 @@ private struct MainWindowContent: View {
                     case .storage:      StorageView()
                     }
                 }
+                // Vertical lift is owned by `screenReveal()` (deterministic
+                // bottom-to-top, never reverses); the container only
+                // crossfades old → new so there is no direction to flip.
+                .screenReveal()
                 .id(appState.selectedSection)
-                .transition(.sectionSwap)
+                .transition(.opacity)
             }
             .clipped()
-            .animation(AppAnimation.sectionTransition, value: appState.selectedSection)
+            .animation(.easeInOut(duration: 0.3), value: appState.selectedSection)
             // Enable text selection across all detail panes so the
             // user can copy IPs, file paths, app names, sizes, etc.
             // The bubble map disables it locally on top of this.

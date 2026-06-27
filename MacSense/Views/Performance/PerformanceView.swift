@@ -27,10 +27,11 @@ struct PerformanceView: View {
     @State private var showProcessList = false
 
     var body: some View {
+        // Monitor is started by AppState and runs always so the sidebar
+        // health dot reflects live state. No per-view start/stop here.
+        // Entry reveal is handled uniformly by `screenReveal()` in
+        // MainWindow — no per-view animation here.
         detailLayout
-            // Monitor is started by AppState and runs always so the
-            // sidebar health dot reflects live state. No per-view
-            // start/stop here.
     }
 
     // MARK: - Detail (live grid)
@@ -46,12 +47,12 @@ struct PerformanceView: View {
                                    count: 3),
                     spacing: Theme.sectionSpacing
                 ) {
-                    cpuTile.cascadeAppear(index: 0, base: 0.05, step: 0.05, cap: 0.5)
-                    memoryTile.cascadeAppear(index: 1, base: 0.05, step: 0.05, cap: 0.5)
-                    diskTile.cascadeAppear(index: 2, base: 0.05, step: 0.05, cap: 0.5)
-                    networkTile.cascadeAppear(index: 3, base: 0.05, step: 0.05, cap: 0.5)
-                    batteryTile.cascadeAppear(index: 4, base: 0.05, step: 0.05, cap: 0.5)
-                    thermalTile.cascadeAppear(index: 5, base: 0.05, step: 0.05, cap: 0.5)
+                    cpuTile
+                    memoryTile
+                    diskTile
+                    networkTile
+                    batteryTile
+                    thermalTile
                 }
             }
             .padding(28)
@@ -265,41 +266,6 @@ struct PerformanceView: View {
                     .foregroundStyle(Theme.Palette.sky)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-
-                // Secondary: public IP + MAC address.
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(Localization.shared.t(.perfPublic))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, alignment: .leading)
-                        if let publicIP = appState.publicIP {
-                            Text(publicIP)
-                                .foregroundStyle(.primary)
-                                .textSelection(.enabled)
-                        } else if appState.isFetchingPublicIP {
-                            ProgressView().controlSize(.mini)
-                        } else {
-                            Text("—").foregroundStyle(.tertiary)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    if let mac = local.macAddress, !mac.isEmpty {
-                        HStack(spacing: 6) {
-                            Text(Localization.shared.t(.perfMAC))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 44, alignment: .leading)
-                            Text(mac.uppercased())
-                                .foregroundStyle(.primary)
-                                .textSelection(.enabled)
-                            if let iface = local.interface {
-                                Text("·").foregroundStyle(.tertiary)
-                                Text(iface).foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                    }
-                }
-                .font(.system(size: 12, weight: .medium).monospacedDigit())
 
                 // Minor: read/write rates (matches `diskRatesLine`).
                 networkRatesLine

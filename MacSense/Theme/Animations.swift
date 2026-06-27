@@ -21,27 +21,17 @@ enum AppAnimation {
     static let chrome: Animation = .easeInOut(duration: 0.18)
 }
 
-/// Vertical slide + fade transition used everywhere content swaps —
-/// section switches, two-state hero/detail toggles, sub-tab swaps.
+/// Vertical slide + fade transition used for in-section content swaps —
+/// two-state hero/detail toggles, sub-tab swaps. Section entry itself is
+/// handled by `screenReveal()`, not a transition.
 ///
 /// Pattern: outgoing fades + slides UP + scales down slightly (recedes).
 /// Incoming fades + slides up from below + scales up. Consistent
 /// vertical directionality reads as a continuous lift; the scale adds
 /// liveliness (UX principle 2 — scale pairs with fade).
 extension AnyTransition {
-    static var sectionSwap: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: .bottom)
-                .combined(with: .opacity)
-                .combined(with: .scale(scale: 0.97, anchor: .center)),
-            removal: .move(edge: .top)
-                .combined(with: .opacity)
-                .combined(with: .scale(scale: 0.97, anchor: .center))
-        )
-    }
-
-    /// Same vertical lift, tighter — used for in-section swaps (hero →
-    /// detail within Cleanup, etc.).
+    /// Vertical lift used for in-section swaps (hero → detail within
+    /// Cleanup, tab swaps in Storage, etc.).
     static var contentLift: AnyTransition {
         .asymmetric(
             insertion: .move(edge: .bottom)
@@ -52,6 +42,31 @@ extension AnyTransition {
                 .combined(with: .scale(scale: 0.96, anchor: .center))
         )
     }
+}
+
+/// Uniform per-screen entry reveal: the whole screen content slides up
+/// from below and fades in, once, when the screen mounts. Driven by an
+/// `onAppear` toggle (not a `.transition`) so the direction is always
+/// bottom-to-top and can never reverse on an interrupted section swap —
+/// the cause of the occasional flipped lift. The section container only
+/// crossfades; this modifier owns the vertical motion.
+struct ScreenReveal: ViewModifier {
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown ? 0 : 24)
+            .onAppear {
+                withAnimation(AppAnimation.sectionTransition) { shown = true }
+            }
+    }
+}
+
+extension View {
+    /// Stamp on a screen's root so it reveals identically to every other
+    /// screen on section entry. See `ScreenReveal`.
+    func screenReveal() -> some View { modifier(ScreenReveal()) }
 }
 
 /// Cascading appear — staggers child entry so primary content lands
