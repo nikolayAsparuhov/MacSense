@@ -53,10 +53,10 @@ final class AppState: ObservableObject {
             for i in installedApps.indices {
                 installedApps[i].fileSizes = nil
                 installedApps[i].discoveredURLs = nil
+                installedApps[i].matchReasons = nil
+                installedApps[i].excludedItems = nil
             }
-            discoveredFiles = []
-            selectedFiles = []
-            appFileSizes = [:]
+            uninstall.releaseMemory()
         case .cleanup, .performance:
             break
         }
@@ -122,29 +122,11 @@ final class AppState: ObservableObject {
     /// true triggers a single final sort by total size.
     @Published var appsSizingComplete: Bool = false
     @Published var selectedApp: InstalledApp? = nil
-    @Published var discoveredFiles: [URL] = []
-    @Published var selectedFiles: Set<URL> = []
-    @Published var isScanningAppFiles: Bool = false
-    @Published var removalError: String? = nil
-    /// Set when an app's full removal completes successfully — drives the
-    /// success-checkmark overlay in `ExpandedAppCard`. Carries the
-    /// removed app's `id` so the overlay knows which card to celebrate
-    /// over before auto-closing.
-    @Published var deletionSucceededFor: InstalledApp.ID? = nil
-    /// Transient banner message shown inside the expanded app card when
-    /// the user deletes only some of the app's files (not the .app
-    /// itself). Auto-clears after a short delay.
-    @Published var fileDeletionNotice: String? = nil
-    /// Generation token for the auto-dismiss timer of
-    /// `fileDeletionNotice`. Stops a stale dismiss from clearing a newer
-    /// notice when partial deletes happen back-to-back.
-    private var fileDeletionToken: UUID?
-    /// Per-URL allocated size, populated in the background after the
-    /// uninstall sheet opens. Reading this map is O(1); recomputing
-    /// `recursiveAllocatedSize` on every render froze the modal because
-    /// SwiftUI re-evaluated the selected-size sum hundreds of times
-    /// during interaction.
-    @Published var appFileSizes: [URL: Int64] = [:]
+
+    /// Everything scoped to one uninstall interaction — discovered files,
+    /// selection, per-URL sizes, removal. Observed directly by the
+    /// Applications views via `@EnvironmentObject`.
+    let uninstall = UninstallViewModel()
 
     // Login items
     @Published var loginItems: [LoginItem] = []
@@ -241,6 +223,7 @@ final class AppState: ObservableObject {
     private var monitorCancellables = Set<AnyCancellable>()
 
     init() {
+        uninstall.owner = self
         Task { await loadDiskInfo() }
         performanceMonitor.start()
         // Re-publish monitor changes through this AppState so any view
@@ -459,7 +442,7 @@ final class AppState: ObservableObject {
     /// `InstalledApp.fileSizes` so the uninstall modal can show row
     /// values that always sum to the modal header.
     private func streamRelatedSizes(for apps: [InstalledApp]) async {
-        await withTaskGroup(of: (UUID, Int64, [URL], [URL: Int64]).self) { group in
+        await withTaskGroup(of: (UUID, Int64, [URL], [URL: Int64], FinderResult).self) { group in
             let maxConcurrent = 12
             var iterator = apps.makeIterator()
             var inFlight = 0
@@ -468,11 +451,11 @@ final class AppState: ObservableObject {
                 let bundleSize = app.bundleSize
                 let appPath = app.path
                 group.addTask {
-                    let urls = await Self.findRelatedURLs(for: app)
+                    let found = await UninstallViewModel.findRelatedURLs(for: app)
                     var perURL: [URL: Int64] = [:]
-                    perURL.reserveCapacity(urls.count)
+                    perURL.reserveCapacity(found.matches.count)
                     var related: Int64 = 0
-                    for url in urls {
+                    for url in found.matches.keys {
                         if url == appPath {
                             // Reuse the cached bundle size — saves one
                             // full re-walk of the .app per app.
@@ -483,16 +466,17 @@ final class AppState: ObservableObject {
                         perURL[url] = s
                         related += s
                     }
-                    return (app.id, related, urls.sorted { $0.path < $1.path }, perURL)
+                    return (app.id, related, found.matches.keys.sorted { $0.path < $1.path }, perURL, found)
                 }
                 inFlight += 1
             }
             for _ in 0..<maxConcurrent { enqueueNext() }
             while inFlight > 0 {
-                if let (id, size, urls, perURL) = await group.next() {
+                if let (id, size, urls, perURL, found) = await group.next() {
                     inFlight -= 1
                     await MainActor.run { [weak self] in
-                        self?.applySizingResult(appID: id, related: size, urls: urls, fileSizes: perURL)
+                        self?.applySizingResult(appID: id, related: size, urls: urls,
+                                                fileSizes: perURL, found: found)
                     }
                     enqueueNext()
                 }
@@ -503,266 +487,21 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func applySizingResult(appID: UUID, related: Int64, urls: [URL], fileSizes: [URL: Int64]) {
+    func applySizingResult(appID: UUID, related: Int64, urls: [URL],
+                           fileSizes: [URL: Int64], found: FinderResult) {
         guard let idx = installedApps.firstIndex(where: { $0.id == appID }) else { return }
         installedApps[idx].relatedSize = related
         installedApps[idx].discoveredURLs = urls
         installedApps[idx].fileSizes = fileSizes
+        installedApps[idx].matchReasons = found.matches
+        installedApps[idx].excludedItems = found.excluded
         if selectedApp?.id == appID {
             selectedApp?.relatedSize = related
             selectedApp?.discoveredURLs = urls
             selectedApp?.fileSizes = fileSizes
+            selectedApp?.matchReasons = found.matches
+            selectedApp?.excludedItems = found.excluded
         }
-    }
-
-    /// Opens the uninstall sheet for an app. Reuses the URL set captured
-    /// during discovery so the modal total always equals the list total.
-    /// Re-running the heuristic finder mid-session can return a slightly
-    /// different set (race-y aggregation across location threads), which
-    /// made list and modal disagree — e.g. SketchUp 5.9 GB list vs 3.44 GB
-    /// modal. Falls back to a fresh scan only if discovery hasn't run.
-    /// Opens the uninstall sheet for an app. Reuses the URL set captured
-    /// during discovery so the modal total always equals the list total.
-    /// Per-URL sizes are populated in the background — the sheet appears
-    /// instantly and stays interactive (close button, scrolling) while
-    /// sizes stream in.
-    func scanForAppFiles(_ app: InstalledApp) {
-        guard ensureFullDiskAccess() else { return }
-        discoveredFiles = []
-        selectedFiles = []
-        appFileSizes = [:]
-
-        // Cached fast-path: per-URL sizes were captured during streaming
-        // discovery. Sum-of-rows == relatedSize == modal header. No disk
-        // walk on the main thread, no recompute.
-        if let cached = app.discoveredURLs, !cached.isEmpty {
-            isScanningAppFiles = false
-            self.discoveredFiles = cached
-            self.selectedFiles = Set(cached)
-            self.appFileSizes = app.fileSizes ?? [:]
-            return
-        }
-
-        // Fall-back: discovery hasn't finished sizing this app yet, or
-        // the user opened the modal before streaming completed for this
-        // row. Run the heuristic finder + sizer on a background task.
-        isScanningAppFiles = true
-        Task.detached(priority: .userInitiated) { [weak self] in
-            let finder = Self.makeFinder(for: app)
-            let urls = await withCheckedContinuation { (cont: CheckedContinuation<Set<URL>, Never>) in
-                finder.findPathsAsync { result in cont.resume(returning: result) }
-            }
-            let sorted = urls.sorted { $0.path < $1.path }
-            var perURL: [URL: Int64] = [:]
-            perURL.reserveCapacity(urls.count)
-            var related: Int64 = 0
-            for url in urls {
-                if url == app.path {
-                    perURL[url] = app.bundleSize
-                    continue
-                }
-                let s = url.recursiveAllocatedSize()
-                perURL[url] = s
-                related += s
-            }
-            let finalPerURL = perURL
-            let finalRelated = related
-            await MainActor.run { [weak self] in
-                guard let self else { return }
-                self.discoveredFiles = sorted
-                self.selectedFiles = urls
-                self.isScanningAppFiles = false
-                self.appFileSizes = finalPerURL
-                self.applySizingResult(appID: app.id, related: finalRelated, urls: sorted, fileSizes: finalPerURL)
-            }
-        }
-    }
-
-    nonisolated private static func makeFinder(for app: InstalledApp) -> AppPathFinder {
-        let locations = Locations()
-        let appInfo = AppPathFinder.AppInfo(
-            appName: app.appName,
-            bundleIdentifier: app.bundleIdentifier,
-            path: app.path,
-            entitlements: nil,
-            teamIdentifier: nil
-        )
-        return AppPathFinder(appInfo: appInfo, locations: locations)
-    }
-
-    private static func findRelatedURLs(for app: InstalledApp) async -> Set<URL> {
-        let finder = makeFinder(for: app)
-        return await withCheckedContinuation { continuation in
-            finder.findPathsAsync { urls in
-                continuation.resume(returning: urls)
-            }
-        }
-    }
-
-    func removeSelectedFiles() {
-        let allURLs = Array(selectedFiles)
-        let (urls, blocked): ([URL], [URL]) = allURLs.reduce(into: ([], [])) { acc, url in
-            let resolved = url.resolvingSymlinksInPath().path
-            let isBlocked = highRiskHomeDotPaths.contains { root in
-                resolved == root || resolved.hasPrefix(root + "/")
-            }
-            if isBlocked { acc.1.append(url) } else { acc.0.append(url) }
-        }
-        removalError = nil
-        if !blocked.isEmpty {
-            Logger.shared.log("Refused \(blocked.count) high-risk dotpath(s)", level: .warning)
-            selectedFiles.subtract(blocked)
-        }
-        guard !urls.isEmpty else {
-            if !blocked.isEmpty {
-                removalError = Localization.shared.t(.removalRefusedFormat, blocked.count)
-            }
-            return
-        }
-        trashItems(urls: urls)
-    }
-
-    private func trashItems(urls: [URL]) {
-        Task.detached(priority: .userInitiated) { [weak self] in
-            let fm = FileManager.default
-            var removed: [URL] = []
-            var permFails: [URL] = []
-            var otherFails: [(URL, Error)] = []
-            var needAuthRetry: [URL] = []
-            for url in urls {
-                do {
-                    try fm.trashItem(at: url, resultingItemURL: nil)
-                    removed.append(url)
-                } catch let err as NSError {
-                    if Self.isPermissionError(err) { needAuthRetry.append(url) }
-                    else { otherFails.append((url, err)) }
-                    Logger.shared.log("trashItem failed for \(url.path): \(err)", level: .info)
-                }
-            }
-            if !needAuthRetry.isEmpty {
-                let outcome = await Self.recycleWithAuth(urls: needAuthRetry)
-                removed.append(contentsOf: outcome.removed)
-                permFails.append(contentsOf: outcome.failed)
-            }
-            await MainActor.run { [weak self, removed, permFails, otherFails] in
-                guard let self else { return }
-                if !removed.isEmpty {
-                    self.discoveredFiles.removeAll { removed.contains($0) }
-                    self.selectedFiles.subtract(removed)
-                }
-                if !permFails.isEmpty {
-                    let n = permFails.count
-                    self.removalError = Localization.shared.t(.removalAuthCancelledFormat, n)
-                } else if !otherFails.isEmpty {
-                    let n = otherFails.count
-                    let detail = otherFails.prefix(3)
-                        .map { "\($0.0.lastPathComponent): \($0.1.localizedDescription)" }
-                        .joined(separator: "; ")
-                    self.removalError = Localization.shared.t(.removalNotRemovedFormat, n, detail)
-                }
-                if let selected = self.selectedApp {
-                    let appGone = !FileManager.default.fileExists(atPath: selected.path.path)
-                    if appGone {
-                        // Full uninstall: the .app bundle is in Trash.
-                        // Signal success to the expanded card BEFORE
-                        // clearing the selected app — overlay observes
-                        // this id, animates a checkmark, then triggers
-                        // onClose itself. List mutates in-place; no
-                        // reload of `installedApps` triggered.
-                        self.deletionSucceededFor = selected.id
-                        self.installedApps.removeAll { $0.id == selected.id }
-                        Logger.shared.log("Uninstalled \(selected.appName)", level: .info)
-                    } else if !removed.isEmpty,
-                              let idx = self.installedApps.firstIndex(where: { $0.id == selected.id }) {
-                        // Partial delete: app survives, only related
-                        // files removed. Update the cached
-                        // discoveredURLs / fileSizes / relatedSize so
-                        // reopening the modal shows the trimmed set
-                        // instead of resurrecting the deleted rows.
-                        let removedSet = Set(removed)
-                        var app = self.installedApps[idx]
-                        if var urls = app.discoveredURLs {
-                            urls.removeAll { removedSet.contains($0) }
-                            app.discoveredURLs = urls
-                        }
-                        if var sizes = app.fileSizes {
-                            for url in removed { sizes.removeValue(forKey: url) }
-                            app.fileSizes = sizes
-                            // Recompute relatedSize from the trimmed map
-                            // (excluding the .app bundle itself).
-                            let related = sizes
-                                .filter { $0.key != app.path }
-                                .values.reduce(0, +)
-                            app.relatedSize = related
-                        }
-                        self.installedApps[idx] = app
-                        self.selectedApp = app
-                        // Show transient notice — auto-clears after 2s.
-                        let n = removed.count
-                        self.fileDeletionNotice = "Deleted \(n) file\(n == 1 ? "" : "s")"
-                        let token = UUID()
-                        self.fileDeletionToken = token
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-                            guard let self else { return }
-                            if self.fileDeletionToken == token {
-                                self.fileDeletionNotice = nil
-                            }
-                        }
-                        Logger.shared.log("Deleted \(n) file(s) from \(selected.appName)", level: .info)
-                    }
-                }
-            }
-        }
-    }
-
-    nonisolated private static func isPermissionError(_ err: NSError) -> Bool {
-        if err.domain == NSCocoaErrorDomain,
-           err.code == NSFileReadNoPermissionError || err.code == NSFileWriteNoPermissionError {
-            return true
-        }
-        if let underlying = err.userInfo[NSUnderlyingErrorKey] as? NSError,
-           underlying.domain == NSPOSIXErrorDomain,
-           underlying.code == Int(EPERM) || underlying.code == Int(EACCES) {
-            return true
-        }
-        return false
-    }
-
-    nonisolated private static func recycleWithAuth(urls: [URL]) async -> (removed: [URL], failed: [URL]) {
-        guard !urls.isEmpty else { return ([], []) }
-        let trashRoot = NSHomeDirectory() + "/.Trash"
-        let qTrash = shellSingleQuote(trashRoot)
-        let cmds = urls.map { url -> String in
-            let src = shellSingleQuote(url.path)
-            let name = shellSingleQuote(url.lastPathComponent)
-            return "/bin/mv -f \(src) \(qTrash)/\(name) 2>/dev/null || /bin/mv -f \(src) \(qTrash)/$(/bin/date +%s)_\(name)"
-        }
-        let asEscaped = cmds.joined(separator: "; ")
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-        let source = "do shell script \"\(asEscaped)\" with administrator privileges"
-        return await withCheckedContinuation { continuation in
-            DispatchQueue.main.async {
-                var errorInfo: NSDictionary?
-                let script = NSAppleScript(source: source)
-                _ = script?.executeAndReturnError(&errorInfo)
-                if let errorInfo {
-                    let code = (errorInfo[NSAppleScript.errorNumber] as? Int) ?? 0
-                    if code != -128 {
-                        let msg = (errorInfo[NSAppleScript.errorMessage] as? String) ?? "\(errorInfo)"
-                        Logger.shared.log("admin trash failed (\(code)): \(msg)", level: .warning)
-                    }
-                }
-                let fm = FileManager.default
-                let removed = urls.filter { !fm.fileExists(atPath: $0.path) }
-                let failed = urls.filter { fm.fileExists(atPath: $0.path) }
-                continuation.resume(returning: (removed, failed))
-            }
-        }
-    }
-
-    nonisolated private static func shellSingleQuote(_ s: String) -> String {
-        "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     // MARK: - Login Items
@@ -935,6 +674,16 @@ final class AppState: ObservableObject {
     /// in memory from the initial graph build.
     func enterSizeFolder(_ node: StorageNode) {
         guard node.isDirectory, !node.isAggregateOther else { return }
+        // Only ever descend into a child of the folder on screen. A tap that
+        // lands on the pre-animation view can otherwise re-push the folder
+        // that was just opened, putting the same node in the stack twice —
+        // two identical crumbs, and duplicate ids inside the breadcrumb's
+        // ForEach. Every drill-in path (bubble map, sidebar rows, "Other"
+        // expansion) sources its nodes from `current.children`, so nothing
+        // legitimate is turned away here.
+        if let current = sizeNavStack.last {
+            guard current.children.contains(where: { $0.id == node.id }) else { return }
+        }
         sizeNavStack.append(node)
         sizeNavSelection.removeAll()
     }

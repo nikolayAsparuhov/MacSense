@@ -55,7 +55,7 @@ One native app for the four things you actually open a Mac utility for: clean ju
 <td>
 
 ### 🛡️ Safe by default
-<sub>Files go to the Trash, not deleted. Embedded login items can't be corrupted. Confirmation before every destructive action.</sub>
+<sub>Every uninstall path is checked against an allowlist of scan roots and re-checked the moment before deletion. Files go to the Trash by default. Embedded login items can't be corrupted.</sub>
 
 </td>
 <td>
@@ -178,7 +178,7 @@ System junk · User caches · Trash bins · Purgeable space · iCloud offloaded 
 Bubble-map drill-down · Per-folder sizes · Large + old file finder · By-media-type breakdown · Multi-select delete
 
 ### 📱 Applications
-Installed-app inventory with combined size (bundle + caches + prefs + containers) · One-click uninstall (Trash) · Login items audit (User + System) · Toggle / disable / delete launch agents
+Installed-app inventory with combined size (bundle + caches + prefs + containers) · One-click uninstall with a per-file reason and confidence dot · Allowlist path validation before every delete · Excluded-items list with the rule that dropped each one · Safety verdict + confirmation for risky removals · Quits the app and boots out its launch agents first · Trash or permanent mode · Path-level JSON uninstall log · Login items audit (User + System) · Toggle / disable / delete launch agents
 
 ### ⚡ Performance
 Live CPU / memory / disk / network / battery / thermal · Top processes table with kill action · Network device scan · Wi-Fi + Ethernet diagnostics · Flush DNS
@@ -245,7 +245,7 @@ No analytics, no crash reporters, no account, no telemetry. The single outbound 
 <details>
 <summary><b>Can MacSense break my system?</b></summary>
 
-Cleanup actions move files to the Trash, never `unlink` directly — you can restore anything until you empty the bin. Login items registered through SMAppService (Apple's recommended API) cannot be modified by third-party apps; MacSense shows you what is registered and links to System Settings → Login Items for changes. Every multi-file delete is confirmed first.
+Cleanup actions move files to the Trash — you can restore anything until you empty the bin. Uninstalls go through a path validator that only permits strict descendants of the ~50 locations the scanner searches, and refuses filesystem roots, your home folder, every mounted volume, and config folders like `~/.ssh` and `~/.aws` outright; every path is re-validated in the moment before it is deleted. Permanent deletion is opt-in per uninstall and covers your own files only — anything needing an administrator password still goes to the Trash, because MacSense never runs `rm` as root. Login items registered through SMAppService (Apple's recommended API) cannot be removed by third-party apps; MacSense stops and disables the job, and tells you macOS may still list it until it prunes its own database.
 
 </details>
 
@@ -261,9 +261,12 @@ The dev-cache catalog is data-driven and lives in `MacSense/Models/CleaningCateg
 MacSense never uploads your files, scan results, app inventory, or system metrics. The single network call the app makes is an opt-in public-IP lookup against `api.ipify.org` (with `ifconfig.me`, `icanhazip.com`, `ipv4.icanhazip.com` as fallbacks). Disable your network and the rest of the app still works fully offline.
 
 Destructive actions:
-- Files always move to Trash, never delete-in-place
-- Login items registered via SMAppService cannot be modified by third-party apps (macOS restriction); MacSense surfaces this and links to System Settings → Login Items
-- Confirmation dialog before every multi-file delete
+- Files move to the Trash by default; permanent deletion is opt-in per uninstall and never runs as root
+- Every uninstall path must be a strict descendant of a scanned location, and is re-checked immediately before deletion
+- Running apps are quit and their launch agents booted out before any file is removed; if a process won't quit, nothing is deleted
+- Login items registered via SMAppService cannot be removed by third-party apps (macOS restriction); MacSense stops and disables the job and surfaces the residual entry
+- Confirmation dialog before every risky or permanent delete, listing what was flagged
+- Each uninstall is recorded path by path in `~/Library/Application Support/tech.veraio.macsense/uninstall-log.json`
 
 See [SECURITY.md](SECURITY.md) for the responsible-disclosure policy.
 

@@ -70,6 +70,11 @@ struct SizeTabView: View {
                         }
                         .buttonStyle(.plain)
                         .noFocusRing()
+                        // Repeated folder names are common (a container folder
+                        // holding a repo of the same name, node_modules
+                        // packages). The full path on hover is what tells the
+                        // two apart.
+                        .help(node.path)
                         if idx < appState.sizeNavStack.count - 1 {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 9, weight: .bold))

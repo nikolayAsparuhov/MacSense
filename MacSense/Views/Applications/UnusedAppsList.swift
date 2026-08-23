@@ -11,6 +11,7 @@ import SwiftUI
 /// driven by `appState.selectedApp`.
 struct UnusedAppsList: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var uninstall: UninstallViewModel
     @ObservedObject private var loc = Localization.shared
     @State private var threshold: UnusedThreshold = UnusedThreshold.current
 
@@ -99,9 +100,7 @@ struct UnusedAppsList: View {
         withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
             appState.selectedApp = nil
         }
-        appState.discoveredFiles = []
-        appState.selectedFiles = []
-        appState.deletionSucceededFor = nil
+        uninstall.reset()
     }
 
     // MARK: - Hero
@@ -227,7 +226,7 @@ struct UnusedAppsList: View {
 
     private func appRow(_ app: InstalledApp, isNeverOpened: Bool) -> some View {
         Button {
-            appState.scanForAppFiles(app)
+            uninstall.scanForAppFiles(app)
             withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
                 appState.selectedApp = app
             }

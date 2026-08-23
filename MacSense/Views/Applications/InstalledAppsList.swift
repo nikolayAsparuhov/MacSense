@@ -4,6 +4,7 @@ import SwiftUI
 /// open the uninstall sheet showing all related files.
 struct InstalledAppsList: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var uninstall: UninstallViewModel
     @ObservedObject private var loc = Localization.shared
     @State private var search = ""
     @State private var selection: InstalledApp.ID?
@@ -97,9 +98,7 @@ struct InstalledAppsList: View {
         withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
             appState.selectedApp = nil
         }
-        appState.discoveredFiles = []
-        appState.selectedFiles = []
-        appState.deletionSucceededFor = nil
+        uninstall.reset()
     }
 
     // MARK: - Hero
@@ -188,7 +187,7 @@ struct InstalledAppsList: View {
 
     private func appRow(_ app: InstalledApp) -> some View {
         Button {
-            appState.scanForAppFiles(app)
+            uninstall.scanForAppFiles(app)
             withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
                 appState.selectedApp = app
             }

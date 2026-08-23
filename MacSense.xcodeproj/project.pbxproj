@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1B2C3D4E5F60000AA0000E9 /* UninstallRemover.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E9 /* UninstallRemover.swift */; };
+		A1B2C3D4E5F60000AA0000E8 /* UninstallLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E8 /* UninstallLog.swift */; };
+		A1B2C3D4E5F60000AA0000E7 /* DeletionMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E7 /* DeletionMode.swift */; };
+		A1B2C3D4E5F60000AA0000E6 /* UninstallPreflight.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E6 /* UninstallPreflight.swift */; };
+		A1B2C3D4E5F60000AA0000E5 /* UninstallSafetyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E5 /* UninstallSafetyViews.swift */; };
+		A1B2C3D4E5F60000AA0000E4 /* UninstallPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E4 /* UninstallPlan.swift */; };
+		A1B2C3D4E5F60000AA0000E3 /* MatchReason.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E3 /* MatchReason.swift */; };
+		A1B2C3D4E5F60000AA0000E2 /* UninstallPathValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E2 /* UninstallPathValidator.swift */; };
 		03D6542605663A6ADCD241B3 /* ApplicationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC580AF82F80AFC6EB1C21C7 /* ApplicationsView.swift */; };
 		0DED1726674EEA8EEDBBC0BE /* CleaningEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11989E0971DB1CB7EF1E07EC /* CleaningEngine.swift */; };
 		0DF980E14279C6EC5A4E8414 /* ScanEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56EE8F9395A1A64F9DD6932 /* ScanEngine.swift */; };
@@ -37,6 +45,7 @@
 		A1B2C3D4E5F60000AA000002 /* ScheduleSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000002 /* ScheduleSettingsStore.swift */; };
 		A1B2C3D4E5F60000AA000003 /* BackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000003 /* BackgroundScheduler.swift */; };
 		A1B2C3D4E5F60000AA000004 /* ScheduleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */; };
+		A1B2C3D4E5F60000AA0000E1 /* UninstallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF0000E1 /* UninstallViewModel.swift */; };
 		A1B2C3D4E5F60000AA000005 /* ScheduleSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000005 /* ScheduleSection.swift */; };
 		A1B2C3D4E5F60000AA000006 /* UnusedThreshold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000006 /* UnusedThreshold.swift */; };
 		A1B2C3D4E5F60000AA000007 /* LastUsedFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000FF000007 /* LastUsedFetcher.swift */; };
@@ -108,6 +117,14 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A1B2C3D4E5F60000FF0000E9 /* UninstallRemover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallRemover.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF0000E8 /* UninstallLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallLog.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF0000E7 /* DeletionMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletionMode.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF0000E6 /* UninstallPreflight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallPreflight.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF0000E5 /* UninstallSafetyViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallSafetyViews.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF0000E4 /* UninstallPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallPlan.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF0000E3 /* MatchReason.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchReason.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF0000E2 /* UninstallPathValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallPathValidator.swift; sourceTree = "<group>"; };
 		02CB715564FD2AB67F30A9B2 /* OrphanSafetyPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrphanSafetyPolicy.swift; sourceTree = "<group>"; };
 		06000801C689641F5609B6CB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		089E6E325A2876B749020910 /* GlossyCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlossyCard.swift; sourceTree = "<group>"; };
@@ -141,6 +158,7 @@
 		A1B2C3D4E5F60000FF000002 /* ScheduleSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleSettingsStore.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000003 /* BackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundScheduler.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViewModel.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000FF0000E1 /* UninstallViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000005 /* ScheduleSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleSection.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000006 /* UnusedThreshold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnusedThreshold.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000FF000007 /* LastUsedFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastUsedFetcher.swift; sourceTree = "<group>"; };
@@ -238,6 +256,9 @@
 		19490A96A4A187E3709FEA9F /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60000FF0000E9 /* UninstallRemover.swift */,
+				A1B2C3D4E5F60000FF0000E8 /* UninstallLog.swift */,
+				A1B2C3D4E5F60000FF0000E6 /* UninstallPreflight.swift */,
 				A1B2C3D4E5F60000FF000003 /* BackgroundScheduler.swift */,
 				11989E0971DB1CB7EF1E07EC /* CleaningEngine.swift */,
 				213B613B0CD8E3CC52F1BDC1 /* FullDiskAccessManager.swift */,
@@ -332,6 +353,7 @@
 		B6A6392AB2C36EF2DA1E553B /* Applications */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60000FF0000E5 /* UninstallSafetyViews.swift */,
 				CC580AF82F80AFC6EB1C21C7 /* ApplicationsView.swift */,
 				28DBBD0FFC4F58F1C9CEFDB6 /* InstalledAppsList.swift */,
 				2DF4F6845236B2981516A529 /* LoginItemsList.swift */,
@@ -355,6 +377,8 @@
 		D10A0DD89468045528C2E7B6 /* Logic */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60000FF0000E3 /* MatchReason.swift */,
+				A1B2C3D4E5F60000FF0000E2 /* UninstallPathValidator.swift */,
 				3AA3CED2DB2CF5C429CA104C /* AppInfoFetcher.swift */,
 				2DB0A778AC4BC5D5FF66CF33 /* AppPathFinder.swift */,
 				F910479BCF1BCFBA887DAFFE /* Conditions.swift */,
@@ -379,6 +403,7 @@
 				E0EA17D7FC4E013EFAD3CE00 /* AppState.swift */,
 				A1B2C3D4E5F60000FF00000B /* HelpController.swift */,
 				A1B2C3D4E5F60000FF000004 /* ScheduleViewModel.swift */,
+				A1B2C3D4E5F60000FF0000E1 /* UninstallViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -440,6 +465,8 @@
 		F5865420E6E15E51ECEE388C /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60000FF0000E7 /* DeletionMode.swift */,
+				A1B2C3D4E5F60000FF0000E4 /* UninstallPlan.swift */,
 				2F5ACED30397A42600FD87D2 /* AppSection.swift */,
 				49A8A1028E2A9CCA5C47AEFE /* CleanableItem.swift */,
 				61EA35F862BF67F0FF7F3E2A /* CleaningCategory.swift */,
@@ -531,6 +558,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F60000AA0000E9 /* UninstallRemover.swift in Sources */,
+				A1B2C3D4E5F60000AA0000E8 /* UninstallLog.swift in Sources */,
+				A1B2C3D4E5F60000AA0000E7 /* DeletionMode.swift in Sources */,
+				A1B2C3D4E5F60000AA0000E6 /* UninstallPreflight.swift in Sources */,
+				A1B2C3D4E5F60000AA0000E5 /* UninstallSafetyViews.swift in Sources */,
+				A1B2C3D4E5F60000AA0000E4 /* UninstallPlan.swift in Sources */,
+				A1B2C3D4E5F60000AA0000E3 /* MatchReason.swift in Sources */,
+				A1B2C3D4E5F60000AA0000E2 /* UninstallPathValidator.swift in Sources */,
 				525FFBBE88EAA4AD70029D00 /* AnimatedOrb.swift in Sources */,
 				32741E59F06BB667DFFB2C3D /* Animations.swift in Sources */,
 				38308C8E4A599D8F544C22A8 /* AppInfoFetcher.swift in Sources */,
@@ -595,6 +630,7 @@
 				A1B2C3D4E5F60000AA000002 /* ScheduleSettingsStore.swift in Sources */,
 				A1B2C3D4E5F60000AA000003 /* BackgroundScheduler.swift in Sources */,
 				A1B2C3D4E5F60000AA000004 /* ScheduleViewModel.swift in Sources */,
+				A1B2C3D4E5F60000AA0000E1 /* UninstallViewModel.swift in Sources */,
 				A1B2C3D4E5F60000AA000005 /* ScheduleSection.swift in Sources */,
 				A1B2C3D4E5F60000AA000006 /* UnusedThreshold.swift in Sources */,
 				A1B2C3D4E5F60000AA000007 /* LastUsedFetcher.swift in Sources */,

@@ -347,6 +347,44 @@ enum LocalizationKey: String, CaseIterable {
     case processShownFormat               // "%d shown"
     case uninstallDeletedFormat           // "%@ deleted"
     case uninstallSelectedOfFormat        // "%d of %d selected"
+    case uninstallDeletedFilesFormat      // "Deleted %d files"
+    // Match reasons — why a file was attributed to an app
+    case matchReasonAppBundle             // "The application bundle"
+    case matchReasonRule                  // "Matched a rule for this app"
+    case matchReasonEntitlement           // "Declared by an app entitlement"
+    case matchReasonBundleID              // "Named after the bundle identifier"
+    case matchReasonPartialBundleID       // "Partial bundle identifier match"
+    case matchReasonAppName               // "Named after the app"
+    case matchReasonVendor                // "Vendor or developer identifier"
+    case matchReasonContainer             // "Sandbox container for this app"
+
+    // Uninstall safety assessment + exclusions
+    case safetyLevelSafe
+    case safetyLevelReview
+    case safetyLevelHighRisk
+    case safetyWarningSystemComponents
+    case safetyWarningAdminRequired
+    case safetyWarningLowConfidence
+    case exclusionEncodedProjectPath
+    case exclusionAppRule
+    case exclusionSystemItem
+    case exclusionHighRiskDotPath
+    case exclusionProtectedLocation
+    case exclusionOutsideScanRoots
+    case exclusionMissing
+    case uninstallExcludedSectionFormat
+    case uninstallConfirmTitle
+    case uninstallConfirmBodyFormat
+    case uninstallConfirmAction
+    case safetyWarningAppRunning
+    case removalAppStillRunningFormat     // "%@ is still running."
+    case uninstallPreparingRemoval
+    case deletionModeTrash
+    case deletionModePermanent
+    case uninstallConfirmBodyPermanentFormat  // "%d items will be deleted permanently."
+    case uninstallConfirmAdminFallbackFormat  // "%d items need a password and go to the Trash instead."
+    case uninstallRevealLog
+    case uninstallFilesDeleted
     case loginItemScopeUser               // "User"
     case loginItemScopeSystemAgent        // "System (Agent)"
     case loginItemScopeSystemDaemon       // "System (Daemon)"

@@ -6,6 +6,7 @@ import SwiftUI
 /// (slide-up panel + dimmed-grid backdrop).
 struct ExpandedAppCard: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var uninstall: UninstallViewModel
     let app: InstalledApp
     let onClose: () -> Void
 
@@ -26,7 +27,7 @@ struct ExpandedAppCard: View {
     /// while the background sizing is still in flight. Never walks disk
     /// from the render path.
     private func rowSizeLabel(for url: URL) -> String {
-        if let bytes = appState.appFileSizes[url] {
+        if let bytes = uninstall.appFileSizes[url] {
             return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         }
         return "—"
@@ -36,12 +37,12 @@ struct ExpandedAppCard: View {
     /// the main thread. Until the background sizing finishes, falls back
     /// to the app's full total when everything is selected.
     private var selectedSize: Int64 {
-        guard !appState.discoveredFiles.isEmpty else { return 0 }
-        if appState.selectedFiles.count == appState.discoveredFiles.count {
+        guard !uninstall.discoveredFiles.isEmpty else { return 0 }
+        if uninstall.selectedFiles.count == uninstall.discoveredFiles.count {
             return app.size
         }
-        return appState.selectedFiles.reduce(Int64(0)) { acc, url in
-            acc + (appState.appFileSizes[url] ?? 0)
+        return uninstall.selectedFiles.reduce(Int64(0)) { acc, url in
+            acc + (uninstall.appFileSizes[url] ?? 0)
         }
     }
 
@@ -61,13 +62,27 @@ struct ExpandedAppCard: View {
                 }
             }
 
-            if appState.deletionSucceededFor == app.id {
+            if uninstall.deletionSucceededFor == app.id {
                 successOverlay
                     .transition(.opacity)
             }
+
+            if let pending = uninstall.pendingConfirmation {
+                Color.black.opacity(0.35)
+                    .onTapGesture { uninstall.cancelConfirmation() }
+                UninstallConfirmSheet(
+                    safety: pending,
+                    fileCount: uninstall.selectedFiles.count,
+                    mode: uninstall.deletionMode,
+                    onCancel: { uninstall.cancelConfirmation() },
+                    onConfirm: { uninstall.confirmRemoval() }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
         }
-        .animation(.easeInOut(duration: 0.25), value: appState.deletionSucceededFor)
-        .onChange(of: appState.deletionSucceededFor) { newValue in
+        .animation(.easeInOut(duration: 0.2), value: uninstall.pendingConfirmation != nil)
+        .animation(.easeInOut(duration: 0.25), value: uninstall.deletionSucceededFor)
+        .onChange(of: uninstall.deletionSucceededFor) { newValue in
             guard newValue == app.id else { return }
             // Reset before each play in case this card is reused.
             successCheckScale = 0.4
@@ -87,12 +102,12 @@ struct ExpandedAppCard: View {
             }
         }
         .alert(Localization.shared.t(.removalFailedTitle), isPresented: Binding(
-            get: { appState.removalError != nil },
-            set: { if !$0 { appState.removalError = nil } }
+            get: { uninstall.removalError != nil },
+            set: { if !$0 { uninstall.removalError = nil } }
         )) {
-            Button(Localization.shared.t(.commonOK), role: .cancel) { appState.removalError = nil }
+            Button(Localization.shared.t(.commonOK), role: .cancel) { uninstall.removalError = nil }
         } message: {
-            Text(appState.removalError ?? "")
+            Text(uninstall.removalError ?? "")
         }
     }
 
@@ -127,7 +142,8 @@ struct ExpandedAppCard: View {
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .opacity(successCheckOpacity)
-                Text(Localization.shared.t(.uninstallFilesMoved))
+                Text(Localization.shared.t(uninstall.deletionMode == .permanent
+                                           ? .uninstallFilesDeleted : .uninstallFilesMoved))
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.7))
                     .opacity(successCheckOpacity)
@@ -157,7 +173,7 @@ struct ExpandedAppCard: View {
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
                     .help(Localization.shared.t(.helpTotalSize))
-                Text(Localization.shared.t(.uninstallSelectedOfFormat, appState.selectedFiles.count, appState.discoveredFiles.count))
+                Text(Localization.shared.t(.uninstallSelectedOfFormat, uninstall.selectedFiles.count, uninstall.discoveredFiles.count))
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -175,7 +191,7 @@ struct ExpandedAppCard: View {
 
     @ViewBuilder
     private var content: some View {
-        if appState.isScanningAppFiles {
+        if uninstall.isScanningAppFiles {
             VStack(spacing: 8) {
                 ProgressView()
                 Text(Localization.shared.t(.uninstallScanning))
@@ -183,7 +199,7 @@ struct ExpandedAppCard: View {
                     .foregroundStyle(.white.opacity(0.6))
             }
             .frame(maxWidth: .infinity, minHeight: 200)
-        } else if appState.discoveredFiles.isEmpty {
+        } else if uninstall.discoveredFiles.isEmpty {
             VStack(spacing: 8) {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 36))
@@ -195,10 +211,18 @@ struct ExpandedAppCard: View {
             .frame(maxWidth: .infinity, minHeight: 200)
         } else {
             ScrollView {
-                LazyVStack(spacing: 4) {
-                    ForEach(Array(appState.discoveredFiles.enumerated()), id: \.element) { idx, url in
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    if let safety = uninstall.safety {
+                        UninstallSafetyStrip(safety: safety)
+                            .padding(.bottom, 4)
+                    }
+                    ForEach(Array(uninstall.discoveredFiles.enumerated()), id: \.element) { idx, url in
                         fileRow(url)
                             .cascadeAppear(index: idx, base: 0.10, step: 0.022, cap: 0.40)
+                    }
+                    if !uninstall.excludedItems.isEmpty {
+                        UninstallExcludedList(items: uninstall.excludedItems)
+                            .padding(.top, 8)
                     }
                 }
                 .padding(.vertical, 8)
@@ -207,13 +231,14 @@ struct ExpandedAppCard: View {
     }
 
     private func fileRow(_ url: URL) -> some View {
-        let isSelected = appState.selectedFiles.contains(url)
+        let isSelected = uninstall.selectedFiles.contains(url)
         return HStack(alignment: .top, spacing: 10) {
             Toggle("", isOn: Binding(
                 get: { isSelected },
                 set: { selected in
-                    if selected { appState.selectedFiles.insert(url) }
-                    else { appState.selectedFiles.remove(url) }
+                    if selected { uninstall.selectedFiles.insert(url) }
+                    else { uninstall.selectedFiles.remove(url) }
+                    uninstall.refreshSafety()
                 }
             ))
             .labelsHidden()
@@ -234,6 +259,9 @@ struct ExpandedAppCard: View {
                     .foregroundStyle(.white.opacity(0.5))
                     .lineLimit(1)
                     .truncationMode(.middle)
+                if let reason = uninstall.matchReasons[url] {
+                    matchReasonLabel(reason)
+                }
             }
             Spacer()
             Text(rowSizeLabel(for: url))
@@ -249,9 +277,33 @@ struct ExpandedAppCard: View {
         )
     }
 
+    /// Evidence line under each row: why the finder attributed this file to
+    /// the app, with a dot whose colour tracks how much the match is worth
+    /// trusting. Low-confidence matches are name-based and are exactly the
+    /// ones a user should look at before deleting.
+    private func matchReasonLabel(_ reason: MatchReason) -> some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(confidenceColor(reason.confidence))
+                .frame(width: 5, height: 5)
+            Text(reason.localizedLabel)
+                .font(.system(size: 10))
+                .foregroundStyle(.white.opacity(0.45))
+                .lineLimit(1)
+        }
+    }
+
+    private func confidenceColor(_ confidence: MatchReason.Confidence) -> Color {
+        switch confidence {
+        case .high:   return Theme.Palette.mint
+        case .medium: return Theme.Palette.amber
+        case .low:    return Theme.Palette.coral
+        }
+    }
+
     @ViewBuilder
     private var deletionNoticeBanner: some View {
-        if let notice = appState.fileDeletionNotice {
+        if let notice = uninstall.fileDeletionNotice {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(Theme.Palette.mint)
@@ -271,7 +323,7 @@ struct ExpandedAppCard: View {
             )
             .transition(.opacity.combined(with: .move(edge: .top)))
             .animation(.spring(response: 0.4, dampingFraction: 0.8),
-                       value: appState.fileDeletionNotice)
+                       value: uninstall.fileDeletionNotice)
             .padding(.bottom, 6)
         }
     }
@@ -285,15 +337,59 @@ struct ExpandedAppCard: View {
 
     private var footerActions: some View {
         HStack(spacing: 10) {
-            Button(Localization.shared.t(.commonSelectAll)) { appState.selectedFiles = Set(appState.discoveredFiles) }
-                .buttonStyle(.soft)
-            Button(Localization.shared.t(.commonDeselectAll)) { appState.selectedFiles.removeAll() }
-                .buttonStyle(.soft)
+            Button(Localization.shared.t(.commonSelectAll)) {
+                uninstall.selectedFiles = Set(uninstall.discoveredFiles)
+                uninstall.refreshSafety()
+            }
+            .buttonStyle(.soft)
+            Button(Localization.shared.t(.commonDeselectAll)) {
+                uninstall.selectedFiles.removeAll()
+                uninstall.refreshSafety()
+            }
+            .buttonStyle(.soft)
+            Button {
+                uninstall.revealLog()
+            } label: {
+                Image(systemName: "doc.text.magnifyingglass")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            .buttonStyle(.plain)
+            .noFocusRing()
+            .help(Localization.shared.t(.uninstallRevealLog))
+
+            Menu {
+                ForEach(DeletionMode.allCases) { mode in
+                    Button {
+                        uninstall.deletionMode = mode
+                    } label: {
+                        Label(Localization.shared.t(mode.titleKey), systemImage: mode.systemImage)
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: uninstall.deletionMode.systemImage)
+                    Text(Localization.shared.t(uninstall.deletionMode.titleKey))
+                }
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.white.opacity(0.7))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+
+            if uninstall.isPreparingRemoval {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text(Localization.shared.t(.uninstallPreparingRemoval))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
             Spacer()
             Button {
-                appState.removeSelectedFiles()
+                uninstall.requestRemoval()
             } label: {
-                Text(Localization.shared.t(.uninstallDeleteFormat, appState.selectedFiles.count, ByteCountFormatter.string(fromByteCount: selectedSize, countStyle: .file)))
+                Text(Localization.shared.t(.uninstallDeleteFormat, uninstall.selectedFiles.count, ByteCountFormatter.string(fromByteCount: selectedSize, countStyle: .file)))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 7)
@@ -302,7 +398,7 @@ struct ExpandedAppCard: View {
             }
             .buttonStyle(.plain)
             .noFocusRing()
-            .disabled(appState.selectedFiles.isEmpty)
+            .disabled(uninstall.selectedFiles.isEmpty || uninstall.isPreparingRemoval)
         }
         .padding(.top, 4)
     }

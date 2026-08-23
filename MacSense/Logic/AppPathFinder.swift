@@ -34,7 +34,11 @@ class AppPathFinder {
     private let appInfo: AppInfo
     private let locations: Locations
     private let sensitivity: Sensitivity
-    private var collectionSet: Set<URL> = []
+    private var collection: [URL: MatchReason] = [:]
+    /// Items that matched the app and were then vetoed by a rule. Surfaced to
+    /// the user so a missing file has a visible reason rather than looking
+    /// like the scanner simply didn't find it.
+    private var excluded: [ExcludedItem] = []
     private let collectionQueue = DispatchQueue(label: "com.puremac.pathfinder.collection")
 
     // Pre-computed cached identifiers (computed once in init, used in hot loop)
@@ -79,9 +83,10 @@ class AppPathFinder {
 
     // MARK: - Public API
 
-    /// Find all files related to this app synchronously.
-    func findPaths() -> Set<URL> {
-        collectionSet.insert(appInfo.path)
+    /// Find all files related to this app synchronously. Every returned URL
+    /// carries the matching level that produced it.
+    func findPaths() -> FinderResult {
+        collection[appInfo.path] = .appBundle
 
         for location in locations.appSearch.paths {
             let isLibRoot = isLibraryDirectory(location)
@@ -89,17 +94,18 @@ class AppPathFinder {
             processLocation(location, currentDepth: 0, maxDepth: maxDepth, isLibraryRootSearch: isLibRoot)
         }
 
-        let containers = discoverContainers()
-        collectionSet.formUnion(containers)
+        for (url, reason) in discoverContainers() where collection[url] == nil {
+            collection[url] = reason
+        }
 
         applyConditions()
 
-        return filterSubpaths(collectionSet)
+        return FinderResult(matches: filterSubpaths(collection), excluded: excluded)
     }
 
     /// Find all files related to this app with parallel location processing.
-    func findPathsAsync(completion: @escaping (Set<URL>) -> Void) {
-        collectionSet.insert(appInfo.path)
+    func findPathsAsync(completion: @escaping (FinderResult) -> Void) {
+        collection[appInfo.path] = .appBundle
 
         let group = DispatchGroup()
         for location in locations.appSearch.paths {
@@ -115,10 +121,13 @@ class AppPathFinder {
         group.notify(queue: .global(qos: .userInitiated)) {
             let containers = self.discoverContainers()
             self.collectionQueue.sync {
-                self.collectionSet.formUnion(containers)
+                for (url, reason) in containers where self.collection[url] == nil {
+                    self.collection[url] = reason
+                }
             }
             self.applyConditions()
-            let result = self.filterSubpaths(self.collectionSet)
+            let result = FinderResult(matches: self.filterSubpaths(self.collection),
+                                      excluded: self.excluded)
             DispatchQueue.main.async {
                 completion(result)
             }
@@ -132,7 +141,7 @@ class AppPathFinder {
             return
         }
 
-        var localResults: [URL] = []
+        var localResults: [(URL, MatchReason)] = []
         var subdirs: [URL] = []
 
         for item in contents {
@@ -148,10 +157,19 @@ class AppPathFinder {
             var isDir: ObjCBool = false
             guard FileManager.default.fileExists(atPath: itemURL.path, isDirectory: &isDir) else { continue }
 
-            if shouldSkipItem(normalizedName, at: itemURL) { continue }
+            if shouldSkipItem(normalizedName, at: itemURL) {
+                // Only worth reporting when the item would otherwise have been
+                // collected — a skip rule firing on an unrelated file is not
+                // information, it's the rule doing its job silently.
+                if rawMatch(normalizedName: normalizedName, itemURL: itemURL) != nil {
+                    record(ExcludedItem(url: itemURL, rule: .systemSkipRule))
+                }
+                continue
+            }
 
-            if matchesApp(normalizedName: normalizedName, itemURL: itemURL) {
+            if let reason = matchesApp(normalizedName: normalizedName, itemURL: itemURL) {
                 let itemToAdd: URL
+                var reasonToAdd = reason
 
                 // For depth-2 matches in Library root, promote to the
                 // parent directory ONLY when the parent itself matches the
@@ -168,9 +186,10 @@ class AppPathFinder {
                     let parentName = parent.lastPathComponent
                     let parentNormalized = parentName.normalizedForMatching()
                     let parentIsStandard = Locations.standardLibrarySubdirectories.contains(parentName)
-                    let parentMatchesUs = matchesApp(normalizedName: parentNormalized, itemURL: parent)
-                    if !parentIsStandard && parentMatchesUs {
+                    let parentReason = matchesApp(normalizedName: parentNormalized, itemURL: parent)
+                    if !parentIsStandard, let parentReason {
                         itemToAdd = parent
+                        reasonToAdd = parentReason
                     } else {
                         itemToAdd = itemURL
                     }
@@ -178,7 +197,7 @@ class AppPathFinder {
                     itemToAdd = itemURL
                 }
 
-                localResults.append(itemToAdd)
+                localResults.append((itemToAdd, reasonToAdd))
             }
 
             // Recurse into subdirectories up to maxDepth
@@ -194,7 +213,9 @@ class AppPathFinder {
         }
 
         collectionQueue.sync {
-            collectionSet.formUnion(localResults)
+            for (url, reason) in localResults where collection[url] == nil {
+                collection[url] = reason
+            }
         }
 
         for subdir in subdirs {
@@ -248,23 +269,33 @@ class AppPathFinder {
 
     /// Multi-level heuristic matcher. Returns true if the normalized filename
     /// belongs to the target app at the current sensitivity level.
-    private func matchesApp(normalizedName: String, itemURL: URL) -> Bool {
-        // Cache leaves shaped like encoded project paths are never owned
-        // by a third-party app whose name happens to appear as a path
-        // component. Reject before any matching runs.
-        if AppPathFinder.looksLikeEncodedProjectPath(itemURL.lastPathComponent) {
-            return false
-        }
+    private func matchesApp(normalizedName: String, itemURL: URL) -> MatchReason? {
+        guard let reason = rawMatch(normalizedName: normalizedName, itemURL: itemURL) else { return nil }
 
+        // Vetoes run after the ladder so a refusal can be reported with the
+        // rule that caused it. Cache leaves shaped like encoded project paths
+        // are never owned by a third-party app whose name happens to appear as
+        // a path component.
+        if AppPathFinder.looksLikeEncodedProjectPath(itemURL.lastPathComponent) {
+            record(ExcludedItem(url: itemURL, rule: .encodedProjectPath))
+            return nil
+        }
+        for condition in appConditions where bundleIDMatchesCondition(condition.bundleID) {
+            if condition.excludeTerms.contains(where: { normalizedName.contains($0) }) {
+                record(ExcludedItem(url: itemURL, rule: .appRuleExcludeTerm))
+                return nil
+            }
+        }
+        return reason
+    }
+
+    /// The matching ladder itself, with no vetoes applied.
+    private func rawMatch(normalizedName: String, itemURL: URL) -> MatchReason? {
         // Per-app condition overrides take priority. Anchor the bundle ID
         // check (see bundleIDMatchesCondition above).
-        for condition in appConditions {
-            guard bundleIDMatchesCondition(condition.bundleID) else { continue }
-            if condition.excludeTerms.contains(where: { normalizedName.contains($0) }) {
-                return false
-            }
+        for condition in appConditions where bundleIDMatchesCondition(condition.bundleID) {
             if condition.includeTerms.contains(where: { normalizedName.contains($0) }) {
-                return true
+                return .condition(condition.bundleID)
             }
         }
 
@@ -273,7 +304,7 @@ class AppPathFinder {
             let match = sensitivity == .strict
                 ? normalizedName == entitlement
                 : normalizedName.contains(entitlement)
-            if match { return true }
+            if match { return .entitlement }
         }
 
         // Level 1: Full bundle identifier
@@ -296,38 +327,47 @@ class AppPathFinder {
             ? normalizedName == appNameLettersOnly
             : normalizedName.contains(appNameLettersOnly))
 
-        if (normalizedBundleID.count >= 5 && fullBundleMatch) || appNameMatch || pathMatch || lettersMatch {
-            return true
-        }
+        if normalizedBundleID.count >= 5, fullBundleMatch { return .bundleIdentifier }
+        if appNameMatch { return .appName }
+        if pathMatch { return .bundleFileName }
+        if lettersMatch { return .lettersOnlyName }
 
         // Enhanced mode: additional partial matching strategies
         if sensitivity != .strict {
             // Level 5: Last two bundle ID components
-            if bundleLastTwo.count >= minLen, normalizedName.contains(bundleLastTwo) { return true }
+            if bundleLastTwo.count >= minLen, normalizedName.contains(bundleLastTwo) { return .bundleLastTwo }
 
             // Level 6: Base bundle ID (strips .helper/.agent/.daemon suffixes)
-            if let base = baseBundleID, base.count >= minLen, normalizedName.contains(base) { return true }
+            if let base = baseBundleID, base.count >= minLen, normalizedName.contains(base) { return .baseBundleIdentifier }
 
             // Level 7: Version-stripped app name
-            if let stripped = strippedAppName, stripped.count >= minLen, normalizedName.contains(stripped) { return true }
+            if let stripped = strippedAppName, stripped.count >= minLen, normalizedName.contains(stripped) { return .strippedAppName }
         }
 
         // Deep mode: broadest matching heuristics
         if sensitivity == .deep {
             // Level 8: Company name extracted from bundle ID
-            if let company = companyName, company.count >= minLen, normalizedName.contains(company) { return true }
+            if let company = companyName, company.count >= minLen, normalizedName.contains(company) { return .companyName }
 
             // Level 9: Team identifier from code signature
-            if let teamID = normalizedTeamID, teamID.count >= minLen, normalizedName.contains(teamID) { return true }
+            if let teamID = normalizedTeamID, teamID.count >= minLen, normalizedName.contains(teamID) { return .teamIdentifier }
         }
 
-        return false
+        return nil
+    }
+
+    /// Exclusions are appended from the same parallel location walkers that
+    /// fill `collection`, so they share its queue.
+    private func record(_ item: ExcludedItem) {
+        collectionQueue.sync {
+            if !excluded.contains(item) { excluded.append(item) }
+        }
     }
 
     // MARK: - Skip Logic
 
     private func shouldSkipItem(_ normalizedName: String, at url: URL) -> Bool {
-        if collectionQueue.sync(execute: { collectionSet.contains(url) }) { return true }
+        if collectionQueue.sync(execute: { collection[url] != nil }) { return true }
 
         for skip in skipConditions {
             for path in skip.skipPaths {
@@ -346,8 +386,8 @@ class AppPathFinder {
 
     /// Discovers sandboxed app containers that belong to this app by checking
     /// both UUID-named containers (via metadata plist) and name-matched containers.
-    private func discoverContainers() -> [URL] {
-        var containers: [URL] = []
+    private func discoverContainers() -> [(URL, MatchReason)] {
+        var containers: [(URL, MatchReason)] = []
 
         guard let containersPath = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)
             .first?.appendingPathComponent("Containers") else { return containers }
@@ -365,7 +405,7 @@ class AppPathFinder {
                 if let meta = NSDictionary(contentsOf: metaPlist),
                    let bundleID = meta["MCMMetadataIdentifier"] as? String,
                    bundleID == appInfo.bundleIdentifier {
-                    containers.append(dir)
+                    containers.append((dir, .containerMetadata))
                 }
             }
 
@@ -374,7 +414,7 @@ class AppPathFinder {
             // container owned by an app with a degenerate bundle identifier.
             if normalizedBundleID.count >= 5,
                dirName.normalizedForMatching() == normalizedBundleID {
-                containers.append(dir)
+                containers.append((dir, .containerNamed))
             }
         }
 
@@ -391,13 +431,15 @@ class AppPathFinder {
             if let paths = condition.forceIncludePaths {
                 for path in paths {
                     if FileManager.default.fileExists(atPath: path.path) {
-                        collectionSet.insert(path)
+                        collection[path] = .forceIncludePath
                     }
                 }
             }
             if let paths = condition.forceExcludePaths {
                 for path in paths {
-                    collectionSet.remove(path)
+                    if collection.removeValue(forKey: path) != nil {
+                        record(ExcludedItem(url: path, rule: .forceExcludePath))
+                    }
                 }
             }
         }
@@ -411,25 +453,27 @@ class AppPathFinder {
 
     /// Removes child paths when a parent is already in the set, and discards
     /// results that consist solely of a Trash item.
-    private func filterSubpaths(_ urls: Set<URL>) -> Set<URL> {
-        let sorted = urls.map { $0.standardizedFileURL }.sorted { $0.path < $1.path }
-        var filtered: [URL] = []
+    private func filterSubpaths(_ found: [URL: MatchReason]) -> [URL: MatchReason] {
+        let sorted = found
+            .map { (url: $0.key.standardizedFileURL, reason: $0.value) }
+            .sorted { $0.url.path < $1.url.path }
+        var filtered: [(url: URL, reason: MatchReason)] = []
 
-        for url in sorted {
+        for entry in sorted {
             // Remove any existing entries that are children of this URL
-            filtered.removeAll { $0.path.hasPrefix(url.path + "/") }
+            filtered.removeAll { $0.url.path.hasPrefix(entry.url.path + "/") }
 
             // Only add if this URL is not a child of an existing entry
-            if !filtered.contains(where: { url.path.hasPrefix($0.path + "/") }) {
-                filtered.append(url)
+            if !filtered.contains(where: { entry.url.path.hasPrefix($0.url.path + "/") }) {
+                filtered.append(entry)
             }
         }
 
         // A single result pointing into the Trash is not meaningful
-        if filtered.count == 1, let first = filtered.first, first.path.contains(".Trash") {
-            return []
+        if filtered.count == 1, let first = filtered.first, first.url.path.contains(".Trash") {
+            return [:]
         }
 
-        return Set(filtered)
+        return Dictionary(uniqueKeysWithValues: filtered.map { ($0.url, $0.reason) })
     }
 }

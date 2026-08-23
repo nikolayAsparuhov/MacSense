@@ -23,6 +23,13 @@ struct InstalledApp: Identifiable, Hashable {
     /// in the heuristic walker, which made the modal total disagree with
     /// the list total (e.g. SketchUp 5.9 GB list vs 3.44 GB modal).
     var discoveredURLs: [URL]?
+    /// Why each discovered URL was attributed to this app. Populated by the
+    /// same walk that fills `discoveredURLs`, so the uninstall card can show
+    /// the evidence next to every row instead of a bare path.
+    var matchReasons: [URL: MatchReason]?
+    /// Files the scanner matched and then refused, cached with the matches so
+    /// the uninstall card can explain an absence.
+    var excludedItems: [ExcludedItem]?
     /// Per-URL allocated sizes captured during the related-size walk.
     /// Lets the uninstall modal display row sizes that always sum to the
     /// modal header (and match the list cell). Without this, recomputing

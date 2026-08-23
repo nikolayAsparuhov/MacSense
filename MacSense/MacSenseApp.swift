@@ -14,6 +14,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
 
+        #if DEBUG
+        UninstallPathValidator.selfCheck()
+        #endif
+
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
 
         // Apple guidance: register every permitted task identifier
@@ -44,6 +48,7 @@ struct MacSenseApp: App {
                 if onboardingComplete {
                     MainWindow()
                         .environmentObject(appState)
+                        .environmentObject(appState.uninstall)
                         .transition(.opacity)
                 } else {
                     OnboardingView(isComplete: $onboardingComplete)

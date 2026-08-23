@@ -19,6 +19,16 @@ If diagnostics appear, fix them before reporting the task complete:
 - **Never silence concurrency warnings** ("captured var self in concurrently-executing code", "main actor-isolated property cannot be accessed from outside actor", etc.) — fix the underlying isolation.
 - **Never leave `// TODO` comments** for unresolved warnings.
 
+## Adding a Swift file (do not run xcodegen)
+
+`project.yml` is stale: `xcodegen generate` flattens the per-locale help folders
+under `MacSense/Resources/Help/<lang>/` into one Resources directory and the
+build fails with ~22 "Multiple commands produce ... .md" errors. Add new files to
+`MacSense.xcodeproj/project.pbxproj` by hand instead — one `PBXBuildFile` entry,
+one `PBXFileReference`, one line in the owning `PBXGroup`, one line in the
+`Sources` build phase. Existing IDs follow `A1B2C3D4E5F60000AA0000<xx>` (build)
+and `A1B2C3D4E5F60000FF0000<xx>` (file ref).
+
 ## Common warning categories + canonical fixes
 
 | Warning | Fix |
